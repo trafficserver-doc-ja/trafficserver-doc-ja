@@ -24,8 +24,8 @@ Plugin Reference
 Apache Traffic Server の重要な機能の一つはモジュール性です。
 コアに不要な機能はコアの中には存在しません。
 これは良いことです。なぜならば、それはコアがいつでも提供する
-とプロキシーに集中することにより、速い状態を保つことができる
-からです。
+キャッシュとプロキシーに集中することにより、速い状態を保つこと
+ができるからです。
 
 All other things can be moved into plugins, by opening up a consistent
 C API, everyone can implement their own functionality, without
