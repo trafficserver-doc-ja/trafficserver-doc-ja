@@ -112,11 +112,11 @@ Caching <explicit-proxy-caching>`_  の章で述べています。
 キャッシュヒエラルキーの中の Traffic Server
 -------------------------------------------
 
-Traffic Server は柔軟にキャッシュヒエラルキーに参加することができます。
-その中で 一つのキャッシュからは満たされないインターネットリクエストは他の
-コンテンツを支配していて、近いキャッシュに近接している局部的なキャッシュへ
-送られます。プロキシーサーバーの階層の中で Traffic Server は他のTraffic Server
-システムや似たキャッシングプロダクトの親や子として振る舞います。
+Traffic Server は内容と近いキャッシュの近接性を利用することで、一つのキャッシュでは
+満たされないインターネットリクエストを他の局地的なキャッシュに送るようなキャッシュ
+ヒエラルキーに柔軟に参加することができます。
+プロキシーサーバーの階層の中で Traffic Server は他のTraffic Server システムや似た
+キャッシングプロダクトの親や子として振る舞います。
 
 Traffic Server は ICP(Internet Cache Protocol) のピアイングをサポートしています。
 階層的キャッシュは `Hierarchical Caching <hierachical-caching>`_ で
