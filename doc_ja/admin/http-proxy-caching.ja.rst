@@ -112,7 +112,6 @@ Traffic Server はキャッシュした HTTP オブジェクトが新しいか�
    Traffic Server はフレッシュネスリミットを
    次の式で計算します。
 
-   ::
        freshness_limit = ( date - last_modified ) * 0.10
 
    この *date* はオブジェクトのサーバーのレスポンスヘッダーの日付で、*last_modified* は
@@ -177,110 +176,111 @@ Setting absolute Freshness Limits
 Specifying Header Requirements
 ------------------------------
 
-To further ensure freshness of the objects in the cache, configure
-Traffic Server to cache only objects with specific headers. By default,
-Traffic Server caches all objects (including objects with no headers);
-you should change the default setting only for specialized proxy
-situations. If you configure Traffic Server to cache only HTTP objects
-with ``Expires`` or ``max-age`` headers, then the cache hit rate will be
-noticeably reduced (since very few objects will have explicit expiration
-information).
+よりいっそうキャッシュしているオブジェクトのフレッシュネスを確かめるために、
+明確なヘッダーを持っているオブジェクトだけをキャッシュするように Traffic Server を
+設定することもできます。デフォルトでは Traffic Server は(ヘッダーがないものの含む)
+全てのオブジェクトをキャッシュします。特別なプロキシーの状況の場合のみデフォルト
+設定を変更するべきです。Traffic Server を ``Expires`` もしくは ``max-age`` ヘッダー
+を持つオブジェクトだけをキャッシュするように設定した場合、キャッシュヒット率は
+明らかに下がるでしょう。(とても少ないオブジェクトしか明確な有効期限の情報をもって
+いないと考えられるためです。)
 
-To configure Traffic Server to cache objects with specific headers
+特別なヘッダーを持つオブジェクトをキャッシュするように Traffic Server を設定するには
 
-1. Edit the following variable in `records.config`_
+1. `records.config`_ の次の変数を変更してください。
 
    -  `proxy.config.http.cache.required_headers`_
 
-2. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して、変更した設定を反映させてください。
 
 Cache-Control Headers
 ---------------------
 
-Even though an object might be fresh in the cache, clients or servers
-often impose their own constraints that preclude retrieval of the object
-from the cache. For example, a client might request that a object *not*
-be retrieved from a cache, or if it does, then it cannot have been
-cached for more than 10 minutes. Traffic Server bases the servability of
-a cached object on ``Cache-Control`` headers that appear in both client
-requests and server responses. The following ``Cache-Control`` headers
-affect whether objects are served from cache:
+キャッシュしたあるオブジェクトがフレッシュだと思われる場合であっても、
+クライアントやサーバーはキャッシュからのオブジェクトの復旧を妨害する
+ようにたびたび制限を課します。例えば、あるクライアントがキャッシュから
+復旧するべき *ではない* オブジェクトへリクエストするかもしれません。
+また、それをした場合、10 分以上はキャッシュすることはできません。
+Traffic Server はキャッシュしたオブジェクトの提供可能性をクライアントの
+リクエストとサーバーのレスポンス両方に現れる ``Cache-Control`` ヘッダ
+を根拠に決定しています。
 
--  The ``no-cache`` header, sent by clients, tells Traffic Server that
-   it should not to serve any objects directly from the cache;
-   therefore, Traffic Server will always obtain the object from the
-   origin server. You can configure Traffic Server to ignore client
-   ``no-cache`` headers - refer to `Configuring Traffic Server to Ignore Client no-cache Headers`_
-   for more information.
+次のような ``Cache-Control`` ヘッダはキャッシュからオブジェクトを提供するかどうかに影響します。
 
--  The ``max-age`` header, sent by servers, is compared to the object
-   age. If the age is less than ``max-age``, then the object is fresh
-   and can be served.
+-  クライアントから送られる ``no-cache`` ヘッダーはどんなオブジェクトも
+   キャッシュから直接返すべきではないということをTraffic Server に示します。
+   従って、Traffic Server は常にオリジンサーバーからオブジェクトを取得します。
+   Traffic Server をクライアントからの ``no-cache`` ヘッダーを無視するように
+   設定することもできます。詳細は `Configuring Traffic Server to Ignore Client no-cache Headers`_
+   を参照してください。
 
--  The ``min-fresh`` header, sent by clients, is an **acceptable
-   freshness tolerance**. This means that the client wants the object to
-   be at least this fresh. Unless a cached object remains fresh at least
-   this long in the future, it is revalidated.
+-  サーバーから送られる ``max-age`` ヘッダーはオブジェクトのキャッシュされて
+   いる時間と比較されます。この時間が ``max-age`` よりも少ない場合、オブジェクトは
+   フレッシュであり配信されます。
 
--  The ``max-stale`` header, sent by clients, permits Traffic Server to
-   serve stale objects provided they are not too old. Some browsers
-   might be willing to take slightly stale objects in exchange for
-   improved performance, especially during periods of poor Internet
-   availability.
+-  クライアントからの ``min-fresh`` ヘッダーは **受け入れることが許容できるフレッシュネス** です。
+   これはクライアントが少なくとも指定された程度フレッシュであることを望ん
+   でいるということを意味します。キャッシュされたオブジェクトが指定された
+   長さを残さなくなった場合、再取得されます。
 
-Traffic Server applies ``Cache-Control`` servability criteria
-***after*** HTTP freshness criteria. For example, an object might be
-considered fresh but will not be served if its age is greater than its
-``max-age``.
+- クライアントからの ``max-stale`` ヘッダーは Traffic Server に古すぎな
+  い失効したオブジェクトを配信することを許可します。いくつかのブラウザー
+  は特に貧弱な Internet 環境にあるような場合パフォーマンスを向上させる
+  ため、わずかに失効したオブジェクトを受け取ることを望むかもしれません。
+
+Traffic Server は ``Cache-Control`` を HTTP フレッシュネスの基準の ***
+後に***配信可能性の基準に適用します。例えば、あるオブジェクトがフレッシュ
+だと考えられる場合でも、age が ``max-age`` よりも大きいければ、それは配
+信されません。
 
 Revalidating HTTP Objects
 -------------------------
 
-When a client requests an HTTP object that is stale in the cache,
-Traffic Server revalidates the object. A **revalidation** is a query to
-the origin server to check if the object is unchanged. The result of a
-revalidation is one of the following:
+クライアントがキャッシュの中で失効した HTTP オブジェクトをリクエストし
+た際、Traffic Server はそのオブジェクトを再検証します。**再検証** はオ
+リジンサーバーへオブジェクトが変更されているかどうかを確認する問い合わ
+せです。再検証の結果は次のいずれかです。
 
--  If the object is still fresh, then Traffic Server resets its
-   freshness limit and serves the object.
+-  オブジェクトが依然としてフレッシュな場合、Traffic Server はフレッシュ
+   ネス期限をリセットして、そのオブジェクトを配信します。
 
--  If a new copy of the object is available, then Traffic Server caches
-   the new object (thereby replacing the stale copy) and simultaneously
-   serves the object to the client.
+-  オブジェクトの新しいコピーが有効な場合、Traffic Server は新しいオブ
+   ジェクトをキャッシュします。(従って、無効なコピーは置き換えられます)
+   また、同時にオブジェクトをクライアントに配信します。
 
--  If the object no longer exists on the origin server, then Traffic
-   Server does not serve the cached copy.
+-  オブジェクトがオリジンサーバー上に存在しない場合、Traffic Server は
+   キャッシュしたコピーを配信しません。
 
--  If the origin server does not respond to the revalidation query, then
-   Traffic Server serves the stale object along with a
-   ``111 Revalidation Failed`` warning.
+-  オリジンサーバーが再検証の問い合わせに応答しない場合、Traffic
+   Server は ``111 Revalidation Failed`` 警告と共に無効なオブジェクト
+   を配信します。
 
-By default, Traffic Server revalidates a requested HTTP object in the
-cache if it considers the object to be stale. Traffic Server evaluates
-object freshness as described in `HTTP Object Freshness`_.
-You can reconfigure how Traffic
-Server evaluates freshness by selecting one of the following options:
+デフォルトでは Traffic Server はリクエストされた HTTP オブジェクトが無
+効だと考えられる場合に再検証します。Traffic Server のオブジェクトのフレッ
+シュネスの評価については `HTTP Object Freshness`_ で述べられています。
+次のオプションの一つを選ぶことによって、 Traffic Server がフレッシュネ
+スを評価する方法を再設定することができます。
 
--  Traffic Server considers all HTTP objects in the cache to be stale:
-   always revalidate HTTP objects in the cache with the origin server.
--  Traffic Server considers all HTTP objects in the cache to be fresh:
-   never revalidate HTTP objects in the cache with the origin server.
--  Traffic Server considers all HTTP objects without ``Expires`` or
-   ``Cache-control`` headers to be stale: revalidate all HTTP objects
-   without ``Expires`` or ``Cache-Control`` headers.
+-  Traffic Server はキャッシュしている全ての HTTP オブジェクトが無効であ
+   ると考えます。つまり、常にキャッシュの中の HTTP オブジェクトをオリジ
+   ンサーバーへ再検証します。
+-  Traffic Server はキャッシュしている全ての HTTP オブジェクトをフレッシュ
+   であると考えます。つまり、オリジンサーバーへ HTTP オブジェクトを再検
+   証することはありません。
+-  Traffic Server は ``Expires`` や ``Cache-Control`` ヘッダを持ってい
+   ない HTTP オブジェクトを無効であると考えます。つまり、常に ``Expires``
+   や ``Cache-Control`` ヘッダのない HTTP オブジェクトを再検証します。
 
-To configure how Traffic Server revalidates objects in the cache, you
-can set specific revalidation rules in `cache.config`_.
+Traffic Server がキャッシュしているオブジェクトを再検証する方法を設定
+するには `cache.config`_ に特定の再検証のルールを設定してください。
 
-To configure revalidation options
+再検証のオプションを設定するには
 
-1. Edit the following variable in `records.config`_
+1. `records.config`_ の次の変数を変更してください。
 
    -  `proxy.config.http.cache.when_to_revalidate`_
 
-2. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して、変更した設定を反映させてください。
 
 Scheduling Updates to Local Cache Content
 =========================================
