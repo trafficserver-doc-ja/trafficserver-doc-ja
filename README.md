@@ -65,11 +65,19 @@ Transifex への参加は"翻訳者"と"レビューワー"という２つの方
 
 ## License
 
-Apache Traffic Server プロジェクトに従い Apache License Version 2 に従います。
+trafficserver-doc-ja プロジェクトの成果物は著作権およびライセンスによる制限のない限り、
+翻訳著作権はこれを trafficserver-doc-ja に帰属することとし、Apache Traffic Server と同じ
+Apache License Version 2 下に公開するものとします。
+
 詳しくは下記を参照してください。
 
-https://github.com/apache/trafficserver/blob/master/LICENSE
+- https://github.com/apache/trafficserver/blob/master/LICENSE
+
+
+翻訳者の方々には翻訳著作権を当プロジェクトに寄贈していただく事になりますが、
+これは翻訳元ドキュメントのライセンス変更に対応したり、あるいは第三者によるライセンス侵犯に対処するための必要な処置です。
+翻訳したドキュメントの自由で円滑な更新・配布を可能とするため、ご理解とご協力をお願いいたします。
 
 - Owners は有償のサービスや書籍として成果物を公開することがあります。
 - 訳文の提出者が明らかなときは、断りのない限り、貢献者としてお名前や id を明記することがあります。
-- Apache Traffic Server プロジェクトに成果物を寄付することがあります。
+- Apache Traffic Server プロジェクトや他のプロジェクトに成果物を寄付することがあります。
