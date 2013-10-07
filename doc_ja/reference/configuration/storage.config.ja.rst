@@ -22,7 +22,7 @@ storage.config
 .. configfile:: storage.config
 
 :file:`storage.config` ファイルは、Traffic Serverのキャッシュとして
-マークアップする全てのファイル、ディレクトリやハードディスク
+構成する全てのファイル、ディレクトリやハードディスク
 パーティションを列挙します。
 :file:`storage.config` ファイル修正後は、Traffic Server を
 再起動しなければいけません。
@@ -57,15 +57,17 @@ Format
 :file:`storage.config` ファイルには、フォーマット済みもしくはローディスクを、
 少なくとも 128MB 指定します。
 
-ローディスクやローパーティションを使う場合、traffic_server を動かす
-管理ユーザが、読み書きの権限を持っているか確認するべきです。
-管理ユーザ ID は、```proxy.config.admin.user_id`` <records.config#proxy.config.admin.user_id>`_. で設定します。
-ベストプラクティスの一つとして、 g+rw 権限がディスクに付与されている場合、
-管理ユーザ ID をそのグループに属させて権限を与えることがあります。
-しかしながら、幾つかのオペレーティングシステムでは奇妙な要求があります。
+ローディスクやローパーティションを使う場合、Traffic Server プロセス に使用される
+:ts:cv:`Traffic Server ユーザ <proxy.config.admin.user_id>` が、ローディスク
+デバイスやローパーティションの読み書きの権限を持っているか確認するべきです。
+ベストプラクティスの一つは、 デバイスファイルに 'g+rw' 権限が付与されることと
+Traffic Server ユーザ がでバイスファイルの自身のグループに属していることを
+確認することです。
+しかしながら、幾つかのオペレーティングシステムではより強い要求があります。
 更なる情報については、以下の例を確認してください。
 
-標準的な ``records.config`` の数値と同様、人間が読める接頭辞もサポートされています。
+標準的な ``records.config`` の数値と同様、ヒューマンリーダブルなプレフィックスも
+サポートされています。
 これらには以下のものを含みます。
 
   - ``K`` キロバイト (1024 バイト)
@@ -77,15 +79,19 @@ Examples
 ========
 
 以下に、キャッシュストレージとして ``/big_dir`` ディレクトリで、
-64MB 使用する例を示します。::
+128MB 使用する例を示します。::
 
-    /big_dir 67108864
+    /big_dir 134217728
 
 ``.`` シンボルを使用してカレントディレクトリを用いることもできます。
 以下に、カレントディレクトリで 64MB キャッシュストレージを構築する例を示します。::
 
-    . 67108864
+    . 134217728
 
+代わりとして、ヒューマンリーダブルなプレフィックスを使用し、 64GB ファイルキャッシュを
+表現できます::
+
+   /really_big_dir 64G
 
 .. note::
     ファイルシステム上のキャッシュディスクストレージを使用する際、
@@ -113,17 +119,17 @@ Linux Example
     /dev/sde volume=1
     /dev/sdf volume=2
 
-``traffic_server`` がディスクにアクセスする為に、 
-``udev`` を使って適切なパーミッションを設定します。
-以下のルールはUbuntuをターゲットにしたものであり、 
-``/etc/udev/rules.d/51-cache-disk.rules`` に保存します::
+:program:`traffic_server` がこのディスクへアクセス可能なことを確実にするために、
+:manpage:`udev(7)` を使って永続的に適切なパーミッションを設定することができます。
+以下のルールはUbuntuをターゲットにされており、 
+``/etc/udev/rules.d/51-cache-disk.rules`` に保存されます::
 
     # Assign /dev/sde and /dev/sdf to the www group
     # make the assignment final, no later changes allowed to the group!
     SUBSYSTEM=="block", KERNEL=="sd[ef]", GROUP:="www"
 
-FreeBSD Example ## {#LinuxExample}
-----------------------------------
+FreeBSD Example
+---------------
 
 5.1 FreeBSD から、明示的なローデバイスのサポートは終了しました。
 FreeBSDにおいて全デバイスは、現在、生でアクセス可能です。
@@ -134,9 +140,9 @@ FreeBSDにおいて全デバイスは、現在、生でアクセス可能です�
     /dev/ada1
     /dev/ada2
 
-``traffic_server`` でディスクにアクセスする為に、 ``devfs`` を使って
-適切なパーミッションを設定します。
-以下のルールを、 ``/etc/devfs.conf`` に保存します。 ::
+:program:`traffic_server` がこのディスクへアクセス可能なことを確実にするために、
+:manpage:`devfs(8)` を使って永続的に適切なパーミッションを設定することができます。
+以下のルールは、 :manpage:`devfs.conf(5)` に保存されます。 ::
 
     # Assign /dev/ada1 and /dev/ada2 to the tserver user
     own    ada[12]  tserver:tserver
