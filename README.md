@@ -35,7 +35,7 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 1. このリポジトリを Fork してください。
 2. Issue にどのドキュメントを翻訳するか登録してください。
    これは同じドキュメントに対して複数の方が同時に翻訳作業を行うことを防ぐためです。
-3. 翻訳をしてください。
+3. 翻訳してください。
    ディレクトリ構成は apache/trafficserver に従ってください。
    ファイル名を `***_ja.rst` としてください。
 4. `master` ブランチへ Pull-Request を送ってください。
@@ -47,17 +47,12 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 ## Transifex
 
 Apache Traffic Server のドキュメントの各言語への翻訳プロジェクトが [Transifex](https://www.transifex.com/) というウェブサービス上にあります。
-コミッターの James Peach さんが管理されています。現在、全てのドキュメントがここにあるわけではありません。(2013/10/06 現在)
 校正作業は Transifex 上で行った方が楽なので、将来的に校正作業はこちらに移していきたいと考えています。
 
-Transifex へサインアップして、 Apache Traffic Server の日本語翻訳チームに参加してください。OSS 利用であれば無料で登録することができます。
-
-Transifex への参加は"翻訳者"と"レビューワー"という２つの方法があります。
-
-- 翻訳者 : 翻訳作業をする方
-- レビュワー : 翻訳を確認／校正する方
-
-翻訳者／レビュワーどちらでも歓迎いたします。気軽にご参加ください。
+Transifex へサインアップして、 Apache Traffic Server の日本語翻訳チームに参加してください。
+OSS 利用であれば無料で登録することができます。
+チームに参加後、Transifex 上で翻訳されるか、既に翻訳してあるものに対してコメントをください。
+特に承認等のプロセスはございませんので、気軽にご参加ください。
 
 - [Transifex](https://www.transifex.com/)
 - [Apache Traffic Server @Transifex](https://www.transifex.com/projects/p/traffic-server-admin/)
@@ -68,11 +63,11 @@ Transifex への参加は"翻訳者"と"レビューワー"という２つの方
 trafficserver-doc-ja プロジェクトの成果物は著作権およびライセンスによる制限のない限り、
 翻訳著作権はこれを trafficserver-doc-ja に帰属することとし、Apache Traffic Server と同じ
 Apache License Version 2 下に公開するものとします。
+また、最終的に Apache Traffic Server コミュニティに成果物を寄付します。
 
 詳しくは下記を参照してください。
 
 - https://github.com/apache/trafficserver/blob/master/LICENSE
-
 
 翻訳者の方々には翻訳著作権を当プロジェクトに寄贈していただく事になりますが、
 これは翻訳元ドキュメントのライセンス変更に対応したり、あるいは第三者によるライセンス侵犯に対処するための必要な処置です。
@@ -80,4 +75,5 @@ Apache License Version 2 下に公開するものとします。
 
 - Owners は有償のサービスや書籍として成果物を公開することがあります。
 - 訳文の提出者が明らかなときは、断りのない限り貢献者としてお名前や id を明記することがあります。
-- Apache Traffic Server プロジェクトや他のプロジェクトに成果物を寄付することがあります。
+- 他のオープンソースプロジェクトに寄付することがあります。
+- Apache Traffic Server プロジェクトに成果物を寄付します。
