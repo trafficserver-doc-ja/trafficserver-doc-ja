@@ -285,79 +285,77 @@ Traffic Server がキャッシュしているオブジェクトを再検証す�
 Scheduling Updates to Local Cache Content
 =========================================
 
-To further increase performance and to ensure that HTTP objects are
-fresh in the cache, you can use the **Scheduled Update** option. This
-configures Traffic Server to load specific objects into the cache at
-scheduled times. You might find this especially beneficial in a reverse
-proxy setup, where you can *preload* content you anticipate will be in
-demand.
+パフォーマンスをはるかに向上させるため、またキャッシュしている HTTP
+オブジェクトがフレッシュであることを確実にするために、**Scheduled
+Update** オプションを使うことができます。これは Traffic Server を特定
+のオブジェクトをスケジュールされた時間にキャッシュに読み込むように設定します。
+リバースプロキシーをセットアップしている際に、負荷が心配されるコンテンツを *preload*
+することができるという点で特に役に立つことを見つけるかもしれません。
 
-To use the Scheduled Update option, you must perform the following
-tasks.
+Scheduled Update オプションを使うためには次のようなタスクを行う必要が
+あります。
 
--  Specify the list of URLs that contain the objects you want to
-   schedule for update,
--  the time the update should take place,
--  and the recursion depth for the URL.
--  Enable the scheduled update option and configure optional retry
-   settings.
+-  スケジュール通りにアップデートしたいオブジェクトを含む URL のリスト
+   、アップデートが実行されるべき時間、URL の再帰する深さを指定してく
+   ださい。
+-  Scheduled Update オプションを有効にし、オプショナルなリトライ設定を
+   指定してください。
 
-Traffic Server uses the information you specify to determine URLs for
-which it is responsible. For each URL, Traffic Server derives all
-recursive URLs (if applicable) and then generates a unique URL list.
-Using this list, Traffic Server initiates an HTTP ``GET`` for each
-unaccessed URL. It ensures that it remains within the user-defined
-limits for HTTP concurrency at any given time. The system logs the
-completion of all HTTP ``GET`` operations so you can monitor the
-performance of this feature.
+Traffic Server は責任を持つ URL を決定するために、指定された情報を使います。
+各 URL に対して Traffic Server は (適用可能であれば) 全ての再帰的な URL を
+作成し、ユニークな URL リストを生成します。
 
-Traffic Server also provides a **Force Immediate Update** option that
-enables you to update URLs immediately without waiting for the specified
-update time to occur. You can use this option to test your scheduled
-update configuration (refer to `Forcing an Immediate Update`_).
+このリストを使って、Traffic Server は HTTP ``GET`` リクエストをアクセスしてい
+ない各 URL に対して始めます。いつでも HTTP の並列性に対するユーザーが
+定義した期限が残っていることを保証します。システムは全ての HTTP
+``GET`` オペレーションの完了を記録します。よって、この機能のパフォーマ
+ンスを監視することができます。
+
+Traffic Server は **Force Immediate Update** オプションも提供します。
+これは URL を指定されたアップデート時間になるまで待つことなく、すぐに
+アップデートすることを可能にします。このオプションをスケジュールされた
+アップデートの設定をテストするために使うことができます。( `Forcing an
+Immediate Update`_ を参照してください)
 
 Configuring the Scheduled Update Option
 ---------------------------------------
 
-To configure the scheduled update option
+Scheduled Update オプションを設定するためには
 
-1. Edit `update.config`_ to
-   enter a line in the file for each URL you want to update.
-2. Edit the following variables in `records.config`_
+1. `update.config`_ をアップデートしたい URL を一行毎に書いてください
+2. `records.config`_ の次の変数を編集してください
 
    -  `proxy.config.update.enabled`_
    -  `proxy.config.update.retry_count`_
    -  `proxy.config.update.retry_interval`_
    -  `proxy.config.update.concurrent_updates`_
 
-3. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+3. ``traffic_line -x`` コマンドを実行して設定の変更を反映してください
 
 Forcing an Immediate Update
 ---------------------------
 
-Traffic Server provides a **Force Immediate Update** option that enables
-you to immediately verify the URLs listed in the `update.config`_ file.
-The Force Immediate Update option disregards the offset hour and
-interval set in the `update.config`_ file and immediately updates the
-URLs listed.
+Traffic Server は **Force Immediate Update** オプションを提供していま
+す。これは `update.config`_ ファイルにリストされた URL を即時に検証す
+ることを可能にします。Force Immediate Update オプションは
+`update.config`_ ファイルに設定されたオフセット時間と間隔を無視し、リ
+ストされた URL を即時的にアップデートします。
 
-To configure the Force Immediate Update option
+Force Immediate Update オプションをセットするには
 
-1. Edit the following variables in `records.config`_
+1. `records.config`_ の次の値を変更してください。
 
    -  `proxy.config.update.force`_
-   -  Make sure the variable
-      `proxy.config.update.enabled`_ is set to 1.
+   -  `proxy.config.update.enabled`_ に 1 がセットされていることを確実
+      にしてください
 
-2. Run the ``command traffic_line -x`` to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して設定の変更を反映してください
 
-**IMPORTANT:** When you enable the Force Immediate Update option,
-Traffic Server continually updates the URLs specified in the
-`update.config`_ file until you disable the option. To disable the
-Force Immediate Update option, set the variable
-`proxy.config.update.force`_ to ``0`` (zero).
+**重要:** Force Immediate Update オプションを有効にした場合、Traffic
+Server はこのオプションが無効化されるまで `update.config`_ ファイルに
+指定された URL をアップデートし続けます。Force Immediate Update オプショ
+ンを無効化するためには、`proxy.config.update.force`_ 変数を ``0`` (ゼ
+ロ) にしてください。
 
 Pushing Content into the Cache
 ==============================
