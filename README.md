@@ -4,7 +4,7 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 
 ## オリジナルサイト／リポジトリ
 
-- ドキュメント : http://trafficserver.apache.org/docs/
+- ドキュメント : https://trafficserver.readthedocs.org/en/latest/index.html
 - リポジトリ : https://github.com/apache/trafficserver/tree/master/doc
 
 # 翻訳
