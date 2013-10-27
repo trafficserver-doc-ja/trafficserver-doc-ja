@@ -202,10 +202,10 @@ Cache-Control Headers
 復旧するべき *ではない* オブジェクトへリクエストするかもしれません。
 また、それをした場合、10 分以上はキャッシュすることはできません。
 Traffic Server はキャッシュしたオブジェクトの提供可能性をクライアントの
-リクエストとサーバーのレスポンス両方に現れる ``Cache-Control`` ヘッダ
+リクエストとサーバーのレスポンス両方に現れる ``Cache-Control`` ヘッダー
 を根拠に決定しています。
 
-次のような ``Cache-Control`` ヘッダはキャッシュからオブジェクトを提供するかどうかに影響します。
+次のような ``Cache-Control`` ヘッダーはキャッシュからオブジェクトを提供するかどうかに影響します。
 
 -  クライアントから送られる ``no-cache`` ヘッダーはどんなオブジェクトも
    キャッシュから直接返すべきではないということをTraffic Server に示します。
@@ -267,9 +267,9 @@ Revalidating HTTP Objects
 -  Traffic Server はキャッシュしている全ての HTTP オブジェクトをフレッシュ
    であると考えます。つまり、オリジンサーバーへ HTTP オブジェクトを再検
    証することはありません。
--  Traffic Server は ``Expires`` や ``Cache-Control`` ヘッダを持ってい
+-  Traffic Server は ``Expires`` や ``Cache-Control`` ヘッダーを持ってい
    ない HTTP オブジェクトを無効であると考えます。つまり、常に ``Expires``
-   や ``Cache-Control`` ヘッダのない HTTP オブジェクトを再検証します。
+   や ``Cache-Control`` ヘッダーのない HTTP オブジェクトを再検証します。
 
 Traffic Server がキャッシュしているオブジェクトを再検証する方法を設定
 するには `cache.config`_ に特定の再検証のルールを設定してください。
