@@ -90,32 +90,64 @@ URI のハッシュ値に基づき、自動的にボリュームに割り当て�
 特定ボリュームに保存することは、:file:`hosting.config` の
 限られた範囲で設定する事で可能です。
 
-Volume Structure
-================
+ボリューム構成
+==============
 
-Volumes are treated as an undifferentiated span of bytes. Internally each stripe on each storage unit is treated almost entirely independently. The data structures described in this section are duplicated for each volume stripe, the part of a volume that resides in a single storage unit. This is how the term "volume" and :cpp:class:`Vol` are used inside the code. What a user thinks of as a volume of the cache is stored in the little used :cpp:class:`CacheVol`.
+ボリュームは区別されないバイト列の範囲として扱われます。
+内部的に、各ストレージユニットの各ストライプは、ほとんど全体を独立して
+扱われます。
+このセクションのデータ構造の記述は、一つのストレージユニットに格納される
+ボリュームの一部の各ボリュームストライプが重複されています。
+これは、 コード内で "ボリューム" と :cpp:class:`Vol` が使用されることに
+よるものです。
+キャッシュのボリュームとしてのユーザの考えは、 :cpp:class:`CacheVol` が
+少し使用されている中に保存されます。
 
 .. index: write cursor
 .. _write-cursor:
 
-Each storage unit in a volume is divided in to two areas -- content and directory. The directory area is used to maintain disk backups of the :ref:`in memory directory <volume-directory>`. The content area stores the actual objects and is used as a circular buffer where new documents overwrite the least recently cached documents. In particular no operating system file structure is present inside a cache volume. The location in a volume where new cache data is written is called the *write cursor*. This means that objects can be de facto evicted from cache even if they have not expired if the data is overwritten by the write cursor.
+ボリュームの各ストレージユニットは、二つのエリア -- コンテントと
+ディレクトリに分けられます。
+ディレクトリエリアは、 :ref:`メモリ内ディレクトリ <volume-directory>` の
+ディスクバックアップを管理する為に使用されます。
+コンテントエリアは、実際のオブジェクトと最も最近キャッシュされた
+ドキュメントを新たなドキュメントで上書きする循環バッファとして使用されます。
+特に、キャッシュボリュームの内部では、どのオペレーティングシステムの
+ファイル構造でもない表現をされます。
+ボリュームの、新たなキャッシュデータの位置は、 *ライトカーソル* と呼ばれます。
+これは、データがライトカーソルによって上書きされる場合、たとえ失効して
+いなくても、オブジェクトは事実上、キャッシュから立ち退かせることを意味します。
+
 
 .. figure:: images/ats-cache-write-cursor.png
    :align: center
 
-   The write cursor and documents in the cache.
+   キャッシュ内のライトカーソルとドキュメント
 
 .. index:: volume directory
 .. _volume-directory:
 
-To find objects each volume has a directory of all documents in that volume. This directory is kept memory resident which means cache misses do not cause disk I/O. A side effect of this is that increasing the size of the cache (not storing more objects) increases the memory footprint of Traffic Server. Every document consumes at least one directory entry, although larger documents can require more entries.
-
+オブジェクトを探すため、各ボリュームはボリューム内に全ての
+ドキュメントのディレクトリを持ちます。
+このディレクトリは、キャッシュミスがディスクI/Oを引き起こさないよう
+メモリに常駐させ続けます。
+この副作用は、キャッシュサイズが増やす(より多くのオブジェクトを
+保存せずに)と、Traffic Server のメモリ使用量が増えることです。
+各ドキュメントは少なくとも1ディレクトリエントリを消費します。
+巨大なドキュメントでは、より多くのエントリを要求できます。
+  
 .. index:: cache key
 .. _cache-key:
 
+ディレクトリは、128ビットキーのハッシュテーブルです。
+このキーの種類は、 *キャッシュキー* と呼ばれます。
+オブジェクトのキャッシュキーは、ボリューム割当 [#]_ の後、相当するディレクトリ
+エントリに配置するのに使用されます。
 The directory is a hash table with a 128 bit key. This kind of key is referred to as a *cache key*. The cache key for an object is used to locate the corresponding directory entry after volume assignment [#]_. This entry in turn references a span in the volume content area which contains the object header and possibly the object as well. The size stored in the directory entry is an :ref:`approximate size <dir-size>` which is at least as big as the actual data on disk. The document header on disk contains metadata for the document including the exact size of the entire document, and the HTTP headers associated with the object.
 
-.. note:: Data in HTTP headers cannot be examined without disk I/O. This includes the original URL for the object, as only the cache key (possibly) derived from it is stored in memory.
+.. note:: HTTPヘッダのデータは、ディスクI/Oなしには検査できません。
+  これは、メモリに格納されたデータ由来のキャッシュキーについてのみ、
+  オブジェクトのオリジナルURLが含まれます。
 
 For persistence the directory is stored on disk in copies (A and B), one of which is "clean" and the other of which is being written from memory. These are stored in the directory section of the volume.
 
@@ -138,64 +170,134 @@ This is a key thing to keep in mind. What appear to be updates (such as doing a 
 
 .. [#] An interesting potential optimization would be configuring average object size per cache volume.
 
-Object Structure
+オブジェクト構造
 ================
 
-Objects are stored as two types of data, metadata and content data. Metadata is all the data about the object and the content and includes the HTTP headers.  The content data is the content of the object, the actual data delivered to the client as the object.
+オブジェクトは二つのデータのタイプ、メタデータとコンテントデータとして保存されます。
+メタデータは、HTTPヘッダを含む、オブジェクトとコンテントに関する全てのデータです。
+コンテントデータはオブジェクトのコンテントで、オブジェクトとしてクライアントに
+配信される実際のデータです。
 
-Objects are rooted in a :cpp:class:Doc structure stored in the cache. This is termed the "first ``Doc``" and always contains the metadata. It is always accessed first for any object. This ``Doc`` is located by doing a lookup of the corresponding cache key in the volume directory which specifies the location and approximate size of the ``Doc``. The ``Doc`` itself has fully accurate size data of both that specific ``Doc`` and the object.
+オブジェクトは、キャッシュに格納される :cpp:class:Doc 構造のルートです。
+これは "first ``Doc``" と呼ばれ、常にメタデータに含まれます。
+それは、任意のオブジェクトにより常に最初にアクセスされます。
+この ``Doc`` は、場所と ``Doc`` の正確なサイズを指定したボリュームディレクトリの
+対応するキャッシュキーにより配置されます。
 
 .. index:: alternate
 
-|TS| supports `varying content <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.44>`_ for objects. These are called *alternates*. All metadata for all alternates is stored in the first ``Doc`` including the set of alternates and the HTTP headers for them. This enables `alternate selection <http://trafficserver.apache.org/docs/trunk/sdk/http-hooks-and-transactions/http-alternate-selection.en.html>`_ to be done after the initial read from disk. An object that has more than one alternate will have the alternate content stored separately from the first ``Doc``. For objects with only one alternate the content may or may not be in the same (first) fragment as the metadata. Each separate alternate content is allocated a volume directory entry and the key for that entry is stored in the first ``Doc`` metadata.
+|TS| は オブジェクト用に `コンテントの検証 
+<http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.44>`_
+をサポートします。
+これらを *オルタネイツ* と呼びます。
+全てのオルタネイツの全てのメタデータは、オルタネイツのセットとそれらの
+HTTPヘッダを含むファースト ``Doc`` に格納されます。
+これは、ディスクからの初期読み込み後に、`オルタネイトセクション <http://trafficserver.apache.org/docs/trunk/sdk/http-hooks-and-transactions/http-alternate-selection.en.html>`_ が実行され有効になります。
+一個以上のオルタネイトを持つオブジェクトは、最初の ``Doc`` とは別に保存された
+オルタネイトコンテントを持ちます。
+一つのオルタネイトのみ持つオブジェクトについては、コンテントはメタデータとしての
+(最初の)フラグメントと同じになるかもしれないし、そうでもないかもしれません。
+個々の分離されたオルタネイトコンテントは、ボリュームディレクトリエントリに
+割り当てられ、エントリーのキーは最初の ``Doc`` メタデータに保存されます。
 
-Prior to version 3.2.0 the header data was stored in the :cpp:class:`CacheHTTPInfoVector` class which was marshaled to a variable length area of the on disk image.
+バージョン 3.2.0 以前は、ヘッダデータは 可変長のディスクイメージの領域をまとめる
+:cpp:class:`CacheHTTPInfoVector` クラス内に保存されていました。
 
 .. figure:: images/ats-cache-doc-layout-pre-3-2-0.png
    :align: center
 
-   ``Doc`` layout, pre 3.2.0
+   3.2.0 以前の ``Doc`` レイアウト
 
-This had the problem that with only one fragment table it could not be reliable accurate for objects with more than one alternate [#]_. Therefore the fragment data was moved from being a separate variable length section of the metadata to being directly incorporated in to the :cpp:class:`CacheHTTPInfoVector`, yielding a layout of the following form.
+これは、一つのフラグメントテーブルのみで、一つ以上のオルタネイト [#]_
+を持つオブジェクトに対して正確な信頼性を持てない問題があります。
+従って、以下の形式のレイアウトになるよう、フラグメントデータはメタデータの個別の
+可変長セクションから、 :cpp:class:`CacheHTTPInfoVector` へ直接統合されるよう
+移動されました。
 
 .. figure:: images/ats-cache-doc-layout.png
    :align: center
 
-   ``Doc`` layout, 3.2.0
+   3.2.0 の ``Doc`` レイアウト
 
-Each element in the vector contains for each alternate, in addition to the HTTP headers and the fragment table (if any), a cache key. This cache key identifies a volume directory entry that is referred to as the "earliest ``Doc``". This is the location where the content for the alternate begins.
+ベクターの各要素は、各オルタネイトに加え、HTTPヘッダと(もしあれば)フラグメント
+テーブル、キャッシュキーを含みます。
+このキャッシュキーは "最初期の ``Doc`` " として参照されるボリュームディレクトリ
+エントリを識別します。
+これはオルタネイトのコンテントが始まる位置です。
 
-When the object is first cached, it will have a single alternate and that will be stored (if not too large) in first ``Doc``. This is termed a *resident alternate* in the code. Resident alternates are not liked and the next time the header information is updated the object content will be separated.
+オブジェクトが最初にキャッシュされたとき、それは単一のオルタネイトを持ち、(大き
+すぎない場合は)最初の ``Doc`` に格納されるでしょう。
+これはコード中で *レジデントオルタネイト* と名付けられます。
+レジデントオルタネイトは好ましく無く、今度はオブジェクトコンテントが分離される
+ようヘッダ情報が更新されます。
 
-.. note:: The :cpp:class:`CacheHTTPInfoVector` is stored only in the first ``Doc``. Subsequent ``Doc`` instances will have an ``hlen`` of zero.
+.. note:: :cpp:class:`CacheHTTPInfoVector` は最初の ``Doc`` にのみ保存されます。
+   その後の ``Doc`` インスタンスは、ゼロの ``hlen`` を持つでしょう
 
-Large objects are split in to *fragments* when written to the cache. Each fragment has its own entry in the volume directory. This is indicated by a total document length that is longer than the content in first ``Doc`` or an earliest ``Doc``. In such a case a fragment offset table is stored. This contains the byte offset in the object content of the first byte of content data for each fragment past the first (as the offset for the first is always zero). This allows range requests to be serviced much more efficiently for large objects, as intermediate fragments can be skipped the first fragment with relevant data loaded next after the first/earliest ``Doc``.  The last fragment in the sequence is detected by the fragment size and offset reaching the end of the total size of the object, there is no explicit end mark. Each fragment is computationally chained from the previous in that the cache key for fragment N is computed by::
+巨大なオブジェクトは、キャッシュに書き込まれる時に *フラグメント*
+に分割されます。
+各フラグメントはボリュームディレクトリの自身のエントリを持ちます。
+これはドキュメント長の合計が、最初の ``Doc`` もしくは最初期の ``Doc``
+のコンテントより長いことを示します。
+これは、(最初のオフセットが常にゼロである)過去に最初だった各フラグメント毎の
+コンテントデータの、最初のバイトのオブジェクトコンテント内の、
+バイトオフセットを含みます。
+これは、中間のフラグメントが、最初/最初期 ``Doc`` の次にロードされた関連データを
+伴う最初のフラグメントをスキップできることにより、巨大なオブジェクトの為に非常に
+効率的に提供されるためのレンジリクエスト許可します。
+シーケンスの最後のフラグメントは、フラグメントサイズとオフセットがオブジェクトの
+合計サイズの最後に到達することにより検出されます。
+明示的なエンドマークはありません。
+各フラグメントは計算上は前のものと繋がっています。
+フラグメントNのキャッシュキーは、以下により計算されます::
 
    key_for_N_plus_one = next_key(key_for_N);
 
-where ``next_key`` is a global function that deterministically computes a new cache key from an existing cache key.
+``next_key`` の部分は、既存のキャッシュキーから新しいキャッシュキーを決定論的に
+計算する帯域関数です。
 
-Objects with multiple fragments are laid out such that the data fragments (including the earliest ``Doc``) are written first and the first ``Doc`` is written last. When read from disk, both the first and earliest ``Doc`` are validated (tested to ensure that they haven't been overwritten by the write cursor) to verify that the entire document is present on disk (as they bookend the other fragments - the write cursor cannot overwrite them without overwriting at leastone of the verified ``Doc`` instances). Note that while the fragments of a single object are ordered they are not necessarily contiguous as data from different objects are interleaved as the data arrives in |TS|.
+複数のフラグメントを伴うオブジェクトは、(最初期の ``Doc`` を含む)最初に
+書き込まれたデータフラグメントと最後に書き込まれた最初の ``Doc`` のように、
+レイアウトされます。
+ディスクから読み込まれる時、最初と最初期の ``Doc``
+の両方は、全体のドキュメントがディスクに存在することを確認する(それら、他の
+フラグメントのブックエンドとして、ライトカーソルは確認された ``Doc`` インスタンス
+の少なくとも一つの上書き無しに、それらを上書き出来ません)ため、(それらが
+ライトカーソルにより上書きされていない確認することにより試験されます)検証されます。
+単一のオブジェクトのフラグメントは、異なるオブジェクトが |TS| に届いたデータ
+として綴じ込められたデータとして、必然的に隣接しないよう整列されることに注意
+してください。
 
 .. index:: pinned
 
-Documents which are "pinned" into the cache must not be overwritten so they are "evacuated" from in front of the write cursor. Each fragment is read and rewritten. There is a special lookup mechanism for objects that are being evacuated so that they can be found in memory rather than the potentially unreliable disk regions. The cache scans ahead of the write cursor to discover pinned objects as there is a dead zone immediately before the write cursor from which data cannot be evacuated. Evacuated data is read from disk and placed in the write queue and written as its turn comes up.
+キャッシュへ "ピン留め" されるオブジェクトは、上書きされてはいけません。
+そのため、それらは ライトカーソルの前に"退避" させられます
+各フラグメントは読み込まれ、再書込みされます。
+潜在的に信頼性の低いディスク領域ではなく、メモリ内で発見できるよう、退避される
+オブジェクトのための特別な検出メカニズムがあります。
+ピン留めされたオブジェクトを発見するため、キャッシュはライトカーソルより前にスキャンされます。
+データを退避させることができないライトカーソル直前のデットゾーンがあります。
+退避されたデータはディスクから読み込まれ、書込みキューに置かれ、出番が来ると
+書き込まれます。
 
-It appears that objects can only be pinned via the :file:`cache.config` file and if the value::
+オブジェクトは、:file:`cache.config` ファイルを経て、以下の値をゼロでない値
+(デフォルトではゼロ)に設定した場合のみピン留めできます。::
 
    proxy.config.cache.permit.pinning
 
-is set to non-zero (it is zero by default). Objects which are in use when the write cursor is near use the same underlying evacuation mechanism but are handled automatically and not via the explicit ``pinned`` bit in :cpp:class:`Dir`.
+ライトカーソルが近い時に使用されるオブジェクトは、しかし
+:cpp:class:`Dir` の明示的な ``pinned`` ビット を経ずに自動的に処理されず、同じ
+潜在的な退避メカニズムを使用します。
 
-.. [#] It could, under certain circumstances, be accurate for none of the alternates.
+.. [#] それは、ある状況下では、オルタネイト無しに正確になりえます。
 
-Additional Notes
-====================
+追加情報
+========
 
 Some general observations on the data structures.
 
-Cyclone buffer
---------------
+循環バッファ
+------------
 
 Because the cache is a cyclone cache objects are not preserved for an indefinite time. Even if the object is not stale it can be overwritten as the cache cycles through its volume. Marking an object as ``pinned`` preserves the object through the passage of the write cursor but this is done by copying the object across the gap, in effect re-storing it in the cache. Pinning large objects or a large number objects can lead to a excessive disk activity. The original purpose of pinning seems to have been for small, frequently used objects explicitly marked by the administrator.
 
@@ -203,7 +305,7 @@ This means the purpose of expiration data on objects is simply to prevent them f
 
 Historically the cache is designed this way because web content was relatively small and not particularly consistent. The design also provides high performance and low consistency requirements. There are no fragmentation issues for the storage, and both cache misses and object deletions require no disk I/O. It does not deal particularly well with long term storage of large objects. See the :ref:`volume tagging` appendix for details on some work in this area.
 
-Disk Failure
+ディスク故障
 ------------
 
 The cache is designed to be relatively resistant to disk failures. Because each storage unit in each volume is mostly independent the loss of a disk simply means that the corresponding :cpp:class:`Vol` instances (one per cache volume that uses the storage unit) becomes unusable. The primary issue is updating the volume assignment table to both preserve assignments for objects on still operational volumes while distributing the assignments from the failed disk to those operational volumes. This mostly done in::
@@ -212,11 +314,11 @@ The cache is designed to be relatively resistant to disk failures. Because each 
 
 Restoring a disk to active duty is quite a bit more difficult task. Changing the volume assignment of a cache key renders any currently cached data inaccessible. This is obviouly not a problem when a disk has failed, but is a bit trickier to decide which cached objects are to be de facto evicted if a new storage unit is added to a running system. The mechanism for this, if any, is still under investigation.
 
-Implementation Details
-======================
+実装の詳細
+==========
 
-Volume Directory
-----------------
+ボリュームディレクトリ
+---------------------
 
 .. _directory-entry:
 
@@ -290,16 +392,16 @@ The set of index entries for a volume are grouped in to *segments*. The number o
 
 Index entries in a segment are grouped *buckets* each of ``DIR_DEPTH`` (currently 4) entries. These are handled in the standard hash table way, giving somewhat less than 2^14 buckets per segment.
 
-Object Metadata
----------------
+オブジェクトメタデータ
+---------------------
 
 The metadata for an object is stored in a :cpp:class:`Doc`.
 
 .. [#] The comment in :file:`records.config` is simply wrong.
 
-----------------
-Cache Operations
-----------------
+--------------
+キャッシュ命令
+--------------
 
 Cache activity starts after the HTTP request header has been parsed and remapped. Tunneled transactions do not interact with the cache because the headers are never parsed.
 
@@ -309,8 +411,8 @@ The three basic cache operations are lookup, read, and write. We will take delet
 
 After the client request header is parsed and is determined to be potentially cacheable, a `cache lookup`_ is done. If successful a `cache read`_ is attempted. If either the lookup or the read fails and the content is considered cacheable then a `cache write`_ is attempted.
 
-Cacheability
-============
+キャッシャビリティ
+=================
 
 The first thing done with a request with respect to cache is to determine whether it is potentially a valid object for the cache. After initial parsing and remapping this check is done primarily to detect a negative result because if so all further cache processing is skipped -- it will not be put in to the cache nor will a cache lookup be done. There are a number of prerequisites along with configuration options to change them. Additional cacheability checks are done later in the process when more is known about the transaction (such as plugin operations and the origin server response). Those checks are described as appropriate in the sections on the relevant operations.
 
@@ -353,8 +455,8 @@ A plugin can call :c:func:`TSHttpTxnReqCacheableSet()` to force the request to b
 
 .. [#] The code appears to check :file:`cache.config` in this logic by setting the ``does_config_permit_lookup`` in the ``cache_info.directives`` of the state machine instance but I can find no place where the value is used. The directive ``does_config_permit_storing`` is set and later checked so the directive (from the administrator point of view) is effective in preventing caching of the object.
 
-Cache Lookup
-============
+キャッシュの探索
+===============
 
 If the initial request is not determined to be cache invalid then a lookup is done. Cache lookup determines if an object is in the cache and if so, where it is located. In some cases the lookup proceeds to read the first ``Doc`` from disk to verify the object is still present in the cache.
 
@@ -378,8 +480,8 @@ There are three basic steps to a cache lookup.
 
 If the lookup succeeds then a more detailed directory entry (struct :cpp:class:`OpenDir`) is created. Note that the directory probe includes a check for an already extant ``OpenDir`` which if found is returned without additional work.
 
-Cache Read
-==========
+キャッシュリード
+===============
 
 Cache read starts after a successful `cache lookup`_. At this point the first ``Doc`` has been loaded in to memory and can be consulted for additional information. This will always contain the HTTP headers for all alternates of the object.
 
@@ -419,8 +521,8 @@ The request is served using a standard virtual connection tunnel (``HttpTunnel``
 
 Range acceleration is done by consulting a fragment offset table attached to the earliest ``Doc`` which contains offsets for all fragments past the first. This allows loading the fragment containing the first requested byte immediately rather than performing reads on the intermediate fragments.
 
-Cache Write
-===========
+キャッシュライト
+===============
 
 Writing to cache is handled by an instance of the class :cpp:class:`CacheVC`. This is a virtual connection which receives data and writes it to cache, acting as a sink. For a standard transaction data transfers between virtual connections (*VConns*) are handled by :ccp:class:HttpTunnel. Writing to cache is done by attaching a ``CacheVC`` instance as a tunnel consumer. It therefore operates in parallel with the virtual connection that transfers data to the client. The data does not flow to the cache and then to the client, it is split and goes both directions in parallel. This avoids any data synchronization issues between the two.
 
@@ -436,8 +538,8 @@ For objects under the target fragment size there is no consideration of order, t
 
 .. how does the write logic know if it's an original object write or an update to an existing object?
 
-Update
-------
+更新
+----
 
 Cache write also covers the case where an existing object in the cache is modified. This occurs when
 
@@ -449,8 +551,8 @@ In every case the metadata for the object must be modified. Because |TS| never u
 
 .. _aggregation-buffer:
 
-Aggregation Buffer
-------------------
+集約バッファ
+------------
 
 Disk writes to cache are handled through an *aggregation buffer*. There is one for each :cpp:class:`Vol` instance.
 To minimize the number of system calls data is written to disk in units of roughly :ref:`target fragment size <target-fragment-size>` bytes. The algorithm used is simple - data is piled up in the aggregation buffer until no more will fit without going over the targer fragment size, at which point the buffer is written to disk and the volume directory entries for objects with data in the buffer are updated with the actual disk locations for those objects (which are determined by the write to disk action). After the buffer is written it is cleared and process repeats. There is a special lookup table for the aggregation buffer so that object lookup can find cache data in that memory.
@@ -459,8 +561,8 @@ Because data in the aggregation buffer is visible to other parts of the cache, p
 
 The target fragment size has little effect on small objects because the fragment sized is used only to parcel out disk write operations. For larger objects the effect very significant as it causes those objects to be broken up in to fragments at different locations on in the volume. Each fragment write has its own entry in the volume directory which are computational chained (each cache key is computed from the previous one). If possible a fragment table is accumulated in the earliest ``Doc`` which has the offsets of the first byte for each fragment.
 
-Evacuation
-----------
+退避
+----
 
 By default the write cursor will overwrite (de facto evict from cache) objects as it proceeds once it has gone around the volume content at least once. In some cases this is not acceptable and the object is *evacuated* by reading it from the cache and then writing it back to cache which moves the physical storage of the object from in front of the write cursor to behind the write cursor. Objects that are evacuated are those that are active in either a read or write operation, or objects that are pinned [#]_.
 
