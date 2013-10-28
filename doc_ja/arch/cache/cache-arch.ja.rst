@@ -294,25 +294,60 @@ HTTPヘッダを含むファースト ``Doc`` に格納されます。
 追加情報
 ========
 
-Some general observations on the data structures.
+データ構造のいくつかの概説。
 
 循環バッファ
 ------------
 
-Because the cache is a cyclone cache objects are not preserved for an indefinite time. Even if the object is not stale it can be overwritten as the cache cycles through its volume. Marking an object as ``pinned`` preserves the object through the passage of the write cursor but this is done by copying the object across the gap, in effect re-storing it in the cache. Pinning large objects or a large number objects can lead to a excessive disk activity. The original purpose of pinning seems to have been for small, frequently used objects explicitly marked by the administrator.
+キャッシュが循環であるため、キャッシュオブジェクトは不定期間の保存はされません。
+たとえオブジェクトが古くなくても、そのボリュームのキャッシュサイクルとして
+上書き出来ます。
+``ピン留め`` としてオブジェクトをマーキングすることにより、ライトカーソルの通過を
+やり過ごし、しかしキャッシュ内で再保存をする効果によりギャップを埋めて、コピー
+することによりこれが処理され、オブジェクトを保存します。
+巨大なオブジェクトや大量のオブジェクトのピン留めは、過度のディスク動作を引き
+起こす場合があります。
+ピン留めの本来の目的は、頻繁に使用されるオブジェクトを管理者により明記的に
+印付け、それを小さくすることだと思われます。
 
-This means the purpose of expiration data on objects is simply to prevent them from being served to clients. They are not in the standard sense deleted or cleaned up. The space can't be immediately reclaimed in any event because writing only happens at the write cursor. Deleting an object consists only of removing the directory entries in the volume directory which suffices to (eventually) free the space and render the document inaccessible.
+これは、オブジェクトの失効データがクライアントに提供されるのをを単に防ぐのが
+目的であることを意味します。
+それらは標準の感覚では削除されたかクリーンアップされていません。
+書込みはライトカーソルでのみ発生するので、どんなイベントにおいてもスペースは
+直ちには取り戻されません。
+オブジェクトの削除は、(結局)スペースを解放し、かつドキュメントをアクセス不可能に
+するのに十分であるボリュームディレクトリのディレクトリエントリの削除からのみ
+成り立ちます。
 
-Historically the cache is designed this way because web content was relatively small and not particularly consistent. The design also provides high performance and low consistency requirements. There are no fragmentation issues for the storage, and both cache misses and object deletions require no disk I/O. It does not deal particularly well with long term storage of large objects. See the :ref:`volume tagging` appendix for details on some work in this area.
+歴史的に、ウェブコンテンツは比較的小さく、特に一貫していなかったので、キャッシュは
+この手段で設計されます。
+この設計は高性能かつ低い一貫性の要求も提供します。
+ストレージのフラグメンテーション問題は無く、またキャッシュミスやオブジェクト
+削除はディスクI/Oを要求しません。
+それは巨大なオブジェクトの長期間保存は特に扱いません。
+この分野の幾つかの働きの詳細の付録 :ref:`volume tagging` を見てください。
 
-ディスク故障
+ディスク障害
 ------------
 
-The cache is designed to be relatively resistant to disk failures. Because each storage unit in each volume is mostly independent the loss of a disk simply means that the corresponding :cpp:class:`Vol` instances (one per cache volume that uses the storage unit) becomes unusable. The primary issue is updating the volume assignment table to both preserve assignments for objects on still operational volumes while distributing the assignments from the failed disk to those operational volumes. This mostly done in::
+キャッシュは、ディスク障害に比較的強いように設計されます。
+各ボリュームの各ストレージユニットはほとんど独立しているので、ディスクの損失は 
+対応する :cpp:class:`Vol` インスタンス(ストレージユニットを使うキャッシュ
+ボリューム毎のそれ)が使えなくなることを単に意味します。
+主な問題は、まだ運用中のボリューム上のオブジェクトのため、故障したディスクから
+それらの運用中のボリューム割当の配布中に割当を両方保存するためのボリューム割当
+テーブルの更新です。
+これはほとんどこれで処理されます::
 
    AIO_Callback_handler::handle_disk_failure
 
-Restoring a disk to active duty is quite a bit more difficult task. Changing the volume assignment of a cache key renders any currently cached data inaccessible. This is obviouly not a problem when a disk has failed, but is a bit trickier to decide which cached objects are to be de facto evicted if a new storage unit is added to a running system. The mechanism for this, if any, is still under investigation.
+現役動作中のディスクにリストアするのは、かなり困難な作業です。
+キャッシュキーのボリューム割当の変更は、現在のどのキャッシュデータもアクセス
+不可能にします。
+これは当然ながらディスクが故障した時の問題ではありませんが、新しいストレージ
+ユニットが動作中のシステムに追加された場合は、どのキャッシュされたオブジェクトが
+事実上追い出されるか決定するため少々扱いにくいです。
+このためのメカニズムは、もし何かあれば、まだ調査下にあります。
 
 実装の詳細
 ==========
