@@ -143,32 +143,58 @@ URI のハッシュ値に基づき、自動的にボリュームに割り当て�
 このキーの種類は、 *キャッシュキー* と呼ばれます。
 オブジェクトのキャッシュキーは、ボリューム割当 [#]_ の後、相当するディレクトリ
 エントリに配置するのに使用されます。
-The directory is a hash table with a 128 bit key. This kind of key is referred to as a *cache key*. The cache key for an object is used to locate the corresponding directory entry after volume assignment [#]_. This entry in turn references a span in the volume content area which contains the object header and possibly the object as well. The size stored in the directory entry is an :ref:`approximate size <dir-size>` which is at least as big as the actual data on disk. The document header on disk contains metadata for the document including the exact size of the entire document, and the HTTP headers associated with the object.
+このエントリは、オブジェクトヘッダとオブジェクトをも含んだをボリュームコンテント
+エリアの間隔を次に参照します。
+ディレクトリエントリに保存されるサイズは、少なくともディスクの実際のデータと同じ
+くらい大きい :ref:`おおよそのサイズ <dir-size>` です。
+ディスク上のドキュメントヘッダは、全ドキュメントの正確なサイズとオブジェクトに
+関連したHTTPヘッダを含むドキュメントの為のメタデータを含みます。
 
 .. note:: HTTPヘッダのデータは、ディスクI/Oなしには検査できません。
   これは、メモリに格納されたデータ由来のキャッシュキーについてのみ、
   オブジェクトのオリジナルURLが含まれます。
 
-For persistence the directory is stored on disk in copies (A and B), one of which is "clean" and the other of which is being written from memory. These are stored in the directory section of the volume.
+永続性のため、ディレクトリはコピー(AとB)でディスク上に保存されます。
+そのうち一つは"クリーン"で、他方はメモリから書かれます。
+これらはボリュームのディレクトリセクションに保存されます。
 
 .. figure:: images/ats-cache-volume-directory.png
    :align: center
 
-   Volume directory structure
+   ボリュームディレクトリ構造
 
-The total size of the directory (the number of entries) is computed by taking the size of the volume and dividing by the average object size. The directory always consumes this amount of memory which has the effect that if cache size is increased so is the memory requirement for |TS|. The average object size defaults to 8000 bytes but can be configured using the value::
+ディレクトリの合計サイズ(エントリの数)は、ボリュームのサイズを取得し、平均
+オブジェクトサイズで除算することで計算されます。
+もしキャッシュサイズが、 |TS| のためのメモリ要求がそうであるよう増加される場合、
+ディレクトリは常に、その効果があるこのメモリ量を消費します。
+平均オブジェクトサイズはデフォルトで8000バイトですが、 :file:`records.config` の
+以下の値を使うことで設定できます。::
 
    proxy.config.cache.min_average_object_size
 
-in :file:`records.config`. Increasing the average object size will reduce the memory footprint of the directory at the expense of reducing the number of distinct objects that can be stored in the cache [#]_.
+平均オブジェクトサイズを増加させることにより、キャッシュに保存する個別の
+オブジェクトの数を減らす犠牲により、ディレクトリのメモリ使用量を減らせる
+でしょう。[#]_
 
-.. note:: Cache data on disk is never updated.
+.. note:: ディスク上のキャッシュデータは永遠に更新されません。
 
-This is a key thing to keep in mind. What appear to be updates (such as doing a refresh on stale content and getting back a 304) are actually new copies of data being written at the write cursor. The originals are left as "dead" space which will be consumed when the write cursor arrives at that disk location. Once the volume directory is updated (in memory!) the original object in the cache is effectively destroyed. This is the general space management techinque used in other cases as well. If an object needs to removed from cache, only its volume directory entry is changed. No other work (and *particulary* no disk I/O) needs to be done.
+これは心に留めておく重要な思考です。
+更新されるように見えるもの（古くなったコンテンツをリフレッシュし、304を返す
+ような）は、実際にはライトカーソルで書き込まれているデータの新しいコピーです。
+オリジナルは、ライトカーソルがディスクのその位置に到着する時消費される、"死んだ"
+スペースとして残されます。
+一旦ボリュームディレクトリが（メモリ内で！）更新されると、キャッシュ上のオリジナル
+オブジェクトは効率的に破棄されます。
+これは他のケースで同様に用いられる、一般的なスペース管理技術です。
+もしオブジェクトをキャッシュから削除することが必要になる場合、ボリュームディレク
+トリエントリのみ変更されます。
+他の動作を行う必要はありません。（そして、 *特に* ディスクI/Oもありません）
 
-.. [#] Because each storage unit in each volume has a separate directory, the assignment must be done before the directory lookup.
+.. [#] 各ボリュームの各ストレージユニットが個別のディレクトリを持つので、割当は
+       ディレクトリの探索の前に行われなければなりません。
 
-.. [#] An interesting potential optimization would be configuring average object size per cache volume.
+.. [#] 興味深い潜在的な最適化は、キャッシュボリューム毎の平均オブジェクトサイズを
+       設定することでしょう。
 
 オブジェクト構造
 ================
