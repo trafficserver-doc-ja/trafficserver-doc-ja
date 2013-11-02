@@ -148,8 +148,11 @@ URI のハッシュ値に基づき、自動的にストライプ（よってキ�
 幾つかのような 様々なものを参照します。
 このドキュメントは、"フラグメント" という単語を、コード中で最も共通の参照として
 いるものとして使います。
+"Doc" ( :cpp:class:`Doc` の) という単語は、フラグメントの為のヘッダデータを
+参照するのに使用されるでしょう。
 全体的にディレクトリは、キーとして "キャッシュID" を伴うハッシュとして扱われます。
-キャッシュIDは、コンテキストに依存した幾つかの方法で生成された128桁の値です。
+キャッシュIDは、コンテキストに依存した幾つかの方法で生成された128ビット
+(16バイト)の値です。
 このキーは減らされ、ディレクトリでエントリを配置するための標準的な方法の
 インデックスとして使用されます。
 
@@ -171,11 +174,10 @@ URI のハッシュ値に基づき、自動的にストライプ（よってキ�
 .. figure:: images/cache-directory-structure.png
    :align: center
 
-各エントリは、ストライプやサイズのオフセットに加えて、キャッシュIDをキーとして
-保存します。
+各エントリは、ストライプやサイズのオフセットを保存します。
 ディレクトリエントリに保存されるサイズは、少なくともディスクの実際のデータと同じ
 くらい大きい :ref:`おおよそのサイズ <dir-size>` です。
-正確なサイズデータは、ディスクのフラグメント内に保存されます。
+正確なサイズデータは、ディスクのフラグメントヘッダ内に保存されます。
 
 .. note:: 
    
@@ -183,16 +185,23 @@ URI のハッシュ値に基づき、自動的にストライプ（よってキ�
    これは、オブジェクトのオリジナルURLが含まれます。
    キャッシュIDのオリジナルソースは、どこにも保存されません。
 
+.. _dir-segment:
+.. _dir-bucket:
+
 ディレクトリ内のエントリはグループ化されています。
 最初のレベルのグルーピングは、 *バケット* です。
-これはエントリの固定の値(現在は4。 ``DIR_DEPTH`` で定義される)です。
+これはエントリの固定の値(現在は4。 ``DIR_DEPTH`` として定義される)です。
 キャッシュIDから生成されたインデックスは、バケットインデックス(エントリ
 インデックスではない)として使用されます。
 バケットは *セグメント* の中へグループ化されます。
 ストライプの全セグメントは、バケットと同じ値を持ちます。
-ストライプ内のセグメントの数は、各セグメントが、セグメント内のエントリが 65535 を
-超過することが無いよう、可能な限り多いバケットを持つように選ばれます。
+ストライプ内のセグメントの数は、各セグメントが、セグメント内のエントリが 65535 
+(2\ :sup:`16`\ -1)を超過することが無いよう、可能な限り多いバケットを持つように
+選ばれます。
 同じストライプ内の全てのセグメントは、同じバケット数を持つよう注意してください。
+
+.. figure:: images/dir-segment-bucket.png
+   :align: center
 
 各エントリは、同一セグメントのエントリとリンクするために使用される、前と次の
 インデックス値を持ちます。
@@ -200,8 +209,22 @@ URI のハッシュ値に基づき、自動的にストライプ（よってキ�
 ある16ビットです。
 ストライプヘッダは、フリーリストのルートとして使用されるエントリインデックスの
 配列を含みます。
-ストライプが初期化される時、セグメントの全てのエントリは、ストライプヘッダの
-ルートのフリーリストへの関連付けがされます。
+ストライプが初期化される時、各バケットの最初のエントリはゼロにされ(未使用だと
+マークされ)、セグメントの全てのエントリは、ストライプヘッダのルートの
+フリーリストへの関連付けがされます。
+本質的には、各固定バケットの最初の要素は、そのバケットにルートとして使用されます。
+固定バケットの他のエントリは、そのバケットに追加するため優先的に好まれますが、
+これは必要ではありません。
+エキストラバケットエントリが順番、全てが二番目の次に三番目、その次に四番目、に
+追加されるように、セグメントフリーリストは初期化されます
+フリーリストはFIFOであるため、これはエキストラエントリは、最初の次に三番目、
+その他と全てのバケットを横断して、四番目のエントリから選択されるかもしれないことを
+意味します。
+これはバケット検索の局所性を最大化します。
+
+.. figure:: images/dir-bucket-assign.png
+   :align: center
+
 使用され返される時、もはや使用されなくなった時に、エントリはこのリストから
 削除されます。
 エントリは、可能であれば、キャッシュキーによりインデックス化されたバケットから
@@ -223,7 +246,7 @@ URI のハッシュ値に基づき、自動的にストライプ（よってキ�
 メタデータは二度保存されます。
 ヘッダとフッタは :cpp:class:`VolHeaderFooter` のインスタンスです。
 これは、可変長配列を引きずるのに持てるスタブ構造です。
-この配列は、ディレクトリ内のセグメントのフリーリストとして使用されます。
+この配列は、ディレクトリ内のセグメントのフリーリストのルートとして使用されます。
 それぞれはセグメントのフリーリストの、最初の要素のセグメントインデックスを
 含みます。
 フッタはセグメントフリーリストを伴わないヘッダのコピーです。
@@ -259,13 +282,10 @@ data length
 オブジェクトサイズで除算することで計算されます。
 もしキャッシュサイズが、 |TS| のためのメモリ要求がそうであるよう増加される場合、
 ディレクトリは常に、その効果があるこのメモリ量を消費します。
-平均オブジェクトサイズはデフォルトで8000バイトですが、 :file:`records.config` の
-以下の値を使うことで設定できます。::
-
-   proxy.config.cache.min_average_object_size
-
+平均オブジェクトサイズはデフォルトで8000バイトですが、 
+:ts:cv:`proxy.config.cache.min_average_object_size` を使うことで設定できます。
 平均オブジェクトサイズを増加させることにより、キャッシュに保存する個別の
-オブジェクトの数を減らす犠牲により、ディレクトリのメモリ使用量を減らせる
+オブジェクトの数を減らす犠牲によって、ディレクトリのメモリ使用量を減らせる
 でしょう。[#]_
 
 .. index: write cursor
@@ -273,8 +293,8 @@ data length
 
 コンテントエリアは、実際のオブジェクトと最も最近キャッシュされた
 ドキュメントを新たなドキュメントで上書きする循環バッファとして使用されます。
-ボリュームの、新たなキャッシュデータの位置は、 *ライトカーソル* と呼ばれます。
-これは、データがライトカーソルによって上書きされる場合、たとえ失効して
+ストライプの新たなキャッシュデータの位置は、 *書込みカーソル* と呼ばれます。
+これは、データが書込みカーソルによって上書きされる場合、たとえ失効して
 いなくても、オブジェクトは事実上、キャッシュから立ち退かせることを意味します。
 もしオブジェクトが上書きされる場合、これはその時は検出されず、ディレクトリは
 更新されません。
@@ -284,14 +304,14 @@ data length
 .. figure:: images/ats-cache-write-cursor.png
    :align: center
 
-   キャッシュ内のライトカーソルとドキュメント
+   キャッシュ内の書込みカーソルとドキュメント
 
 .. note:: ディスク上のキャッシュデータは永遠に更新されません。
 
 これは心に留めておく重要な思考です。
 更新されるように見えるもの（古くなったコンテンツをリフレッシュし、304を返す
-ような）は、実際にはライトカーソルで書き込まれているデータの新しいコピーです。
-オリジナルは、ライトカーソルがディスクのその位置に到着する時消費される、"死んだ"
+ような）は、実際には書込みカーソルで書き込まれているデータの新しいコピーです。
+オリジナルは、書込みカーソルがディスクのその位置に到着する時消費される、"死んだ"
 スペースとして残されます。
 一旦ボリュームディレクトリが（メモリ内で！）更新されると、キャッシュ上のオリジナル
 オブジェクトは効率的に破棄されます。
@@ -328,7 +348,8 @@ data length
 これらを *オルタネイト* と呼びます。
 全てのオルタネイトの全てのメタデータは、オルタネイトのセットとそれらの
 HTTPヘッダを含むファーストフラグメントに格納されます。
-これは、ディスクからの初期読み込み後に、 `オルタネイトセクション <http://trafficserver.apache.org/docs/trunk/sdk/http-hooks-and-transactions/http-alternate-selection.en.html>`_ が実行され有効になります。
+これは、ファースト ``Doc`` がディスクから読込まれた後に、
+`オルタネイトセクション <http://trafficserver.apache.org/docs/trunk/sdk/http-hooks-and-transactions/http-alternate-selection.en.html>`_ が実行され有効になります。
 一個以上のオルタネイトを持つオブジェクトは、ファーストフラグメントとは別に保存された
 オルタネイトコンテントを持ちます。
 一つのオルタネイトのみ持つオブジェクトについては、コンテントはメタデータとしての
@@ -398,9 +419,9 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 レイアウトされます。
 ディスクから読み込まれる時、ファースト、アーリストの ``Doc``
 の両方は、全体のドキュメントがディスクに存在することを確認する(それら、他の
-フラグメントのブックエンドとして、ライトカーソルは確認された ``Doc`` インスタンス
+フラグメントのブックエンドとして、書込みカーソルは確認された ``Doc`` インスタンス
 の少なくとも一つの上書き無しに、それらを上書き出来ません)ため、(それらが
-ライトカーソルにより上書きされていない確認することにより試験されます)検証されます。
+書込みカーソルにより上書きされていない確認することにより試験されます)検証されます。
 単一のオブジェクトのフラグメントは、異なるオブジェクトが |TS| に届いたデータ
 として綴じ込められたデータとして、必然的に隣接しないよう整列されることに注意
 してください。
@@ -413,12 +434,12 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 .. index:: pinned
 
 キャッシュへ "ピン留め" されるオブジェクトは、上書きされてはいけません。
-そのため、それらは ライトカーソルの前に"退避" させられます
+そのため、それらは 書込みカーソルの前に"退避" させられます
 各フラグメントは読み込まれ、再書込みされます。
 潜在的に信頼性の低いディスク領域ではなく、メモリ内で発見できるよう、退避される
 オブジェクトのための特別な検出メカニズムがあります。
-ピン留めされたオブジェクトを発見するため、キャッシュはライトカーソルより前にスキャンされます。
-データを退避させることができないライトカーソル直前のデットゾーンがあります。
+ピン留めされたオブジェクトを発見するため、キャッシュは書込みカーソルより前にスキャンされます。
+データを退避させることができない書込みカーソル直前のデットゾーンがあります。
 退避されたデータはディスクから読み込まれ、書込みキューに置かれ、出番が来ると
 書き込まれます。
 
@@ -427,7 +448,7 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 
    proxy.config.cache.permit.pinning
 
-ライトカーソルが近い時に使用されるオブジェクトは、しかし
+書込みカーソルが近い時に使用されるオブジェクトは、しかし
 :cpp:class:`Dir` の明示的な ``pinned`` ビット を経ずに自動的に処理されず、同じ
 潜在的な退避メカニズムを使用します。
 
@@ -444,7 +465,7 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 キャッシュが循環であるため、キャッシュオブジェクトは不定期間の保存はされません。
 たとえオブジェクトが古くなくても、そのボリュームのキャッシュサイクルとして
 上書き出来ます。
-``ピン留め`` としてオブジェクトをマーキングすることにより、ライトカーソルの通過を
+``ピン留め`` としてオブジェクトをマーキングすることにより、書込みカーソルの通過を
 やり過ごし、しかしキャッシュ内で再保存をする効果によりギャップを埋めて、コピー
 することによりこれが処理され、オブジェクトを保存します。
 巨大なオブジェクトや大量のオブジェクトのピン留めは、過度のディスク動作を引き
@@ -455,7 +476,7 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 これは、オブジェクトの失効データがクライアントに提供されるのをを単に防ぐのが
 目的であることを意味します。
 それらは標準の感覚では削除されたかクリーンアップされていません。
-書込みはライトカーソルでのみ発生するので、どんなイベントにおいてもスペースは
+書込みは書込みカーソルでのみ発生するので、どんなイベントにおいてもスペースは
 直ちには取り戻されません。
 オブジェクトの削除は、(結局)スペースを解放し、かつドキュメントをアクセス不可能に
 するのに十分であるボリュームディレクトリのディレクトリエントリの削除からのみ
@@ -491,11 +512,11 @@ HTTPヘッダを含むファーストフラグメントに格納されます。
 事実上追い出されるか決定するため少々扱いにくいです。
 このためのメカニズムは、もし何かあれば、まだ調査下にあります。
 
-実装の詳細
-==========
+Implementation Details
+======================
 
-ボリュームディレクトリ
----------------------
+Stripe Directory
+----------------
 
 .. _directory-entry:
 
@@ -509,18 +530,18 @@ The in memory volume directory entries are defined as described below.
    Name        Type                Use
    =========== =================== ===================================================
    offset      unsigned int:24     Offset of first byte of metadata (volume relative)
-   big         unsigned in:2       Offset multiplier
+   big         unsigned in:2       Size multiplier
    size        unsigned int:6      Size
    tag         unsigned int:12     Partial key (fast collision check)
    phase       unsigned int:1      Unknown
-   head        unsigned int:1      Flag: first segment in a document
+   head        unsigned int:1      Flag: first fragment in an object
    pinned      unsigned int:1      Flag: document is pinned
    token       unsigned int:1      Flag: Unknown
    next        unsigned int:16     Segment local index of next entry.
    offset_high inku16              High order offset bits
    =========== =================== ===================================================
 
-   The volume directory is an array of ``Dir`` instances. Each entry refers to a span in the volume which contains a cached object. Because every object in the cache has at least one directory entry this data has been made as small as possible.
+   The stripe directory is an array of ``Dir`` instances. Each entry refers to a span in the volume which contains a cached object. Because every object in the cache has at least one directory entry this data has been made as small as possible.
 
    The offset value is the starting byte of the object in the volume. It is 40 bits long split between the *offset* (lower 24 bits) and *offset_high* (upper 16 bits) members. Note that since there is a directory for every storage unit in a cache volume, this is the offset in to the slice of a storage unit attached to that volume.
 
@@ -540,14 +561,14 @@ The in memory volume directory entries are defined as described below.
 
    .. _big-mult:
 
-   ===== ===============   ===============
+   ===== ===============   ========================
    *big* Multiplier        Maximum Size
-   ===== ===============   ===============
+   ===== ===============   ========================
      0   512 (2^9)         32768 (2^15)
      1   4096 (2^12)       262144 (2^18)
      2   32768 (2^15)      2097152 (2^21)
      3   262144 (2^18)     16777216 (2^24)
-   ===== ===============   ===============
+   ===== ===============   ========================
 
    Note also that *size* is effectively offset by one, so a value of 0 indicates a single unit of the multiplier.
 
@@ -557,28 +578,67 @@ The target fragment size can set with the :file:`records.config` value
 
    ``proxy.config.cache.target_fragment_size``
 
-This value should be chosen so that it is a multiple of a :ref:`cache entry multiplier <big-mult>`. It is not necessary to make it a power of 2 [#]_. Larger fragments increase I/O efficiency but lead to more wasted space. The default size (1M, 2^20) is a reasonable choice in most circumstances altough in very specific cases there can be benefit from tuning this parameter. |TS| imposes an internal maximum of a 4194232 bytes which is 4M (2^22) less the size of a struct :cpp:class:`Doc`. In practice then the largest reasonable target fragment size is 4M - 262144 = 3932160.
+This value should be chosen so that it is a multiple of a :ref:`cache entry multiplier <big-mult>`. It is not necessary
+to make it a power of 2 [#]_. Larger fragments increase I/O efficiency but lead to more wasted space. The default size
+(1M, 2^20) is a reasonable choice in most circumstances altough in very specific cases there can be benefit from tuning
+this parameter. |TS| imposes an internal maximum of a 4194232 bytes which is 4M (2^22) less the size of a struct
+:cpp:class:`Doc`. In practice then the largest reasonable target fragment size is 4M - 262144 = 3932160.
 
-When a fragment is stored to disk the size data in the cache index entry is set to the finest granularity permitted by the size of the fragment. To determine this consult the :ref:`cache entry multipler <big-mult>` table, find the smallest maximum size that is at least as large as the fragment. That will indicate the value of *big* selected and therefore the granularity of the approximate size. That represents the largest possible amount of wasted disk I/O when the fragment is read from disk.
+When a fragment is stored to disk the size data in the cache index entry is set to the finest granularity permitted by
+the size of the fragment. To determine this consult the :ref:`cache entry multipler <big-mult>` table, find the smallest
+maximum size that is at least as large as the fragment. That will indicate the value of *big* selected and therefore the
+granularity of the approximate size. That represents the largest possible amount of wasted disk I/O when the fragment is
+read from disk.
 
-.. note:: The cache index entry size is used only for reading the fragment from disk. The actual size on disk, and the amount of cache space consumed, is the actual size of the content rounded up to the disk sector size (default 512 bytes).
+.. note:: The cache index entry size is used only for reading the fragment from disk. The actual size on disk, and the
+amount of cache space consumed, is the actual size of the content rounded up to the disk sector size (default 512
+bytes).
 
 .. index:: DIR_DEPTH, index segment, index buckets
 
-The set of index entries for a volume are grouped in to *segments*. The number of segments for an index is selected so that there are as few segments as possible such that no segment has more than 2^16 entries.  Intra-segment references can therefore use a 16 bit value to refer to any other entry in the segment.
+The set of index entries for a volume are grouped in to *segments*. The number of segments for an index is selected so
+that there are as few segments as possible such that no segment has more than 2^16 entries. Intra-segment references can
+therefore use a 16 bit value to refer to any other entry in the segment.
 
-Index entries in a segment are grouped *buckets* each of ``DIR_DEPTH`` (currently 4) entries. These are handled in the standard hash table way, giving somewhat less than 2^14 buckets per segment.
-
-オブジェクトメタデータ
----------------------
-
-The metadata for an object is stored in a :cpp:class:`Doc`.
+Index entries in a segment are grouped *buckets* each of ``DIR_DEPTH`` (currently 4) entries. These are handled in the
+standard hash table way, giving somewhat less than 2^14 buckets per segment.
 
 .. [#] The comment in :file:`records.config` is simply wrong.
 
---------------
-キャッシュ命令
---------------
+.. _dir-probe:
+
+Directory Probing
+-----------------
+
+Directory probing is locating a specific directory entry in the stripe directory based on a cache ID. This is handled
+primarily by the function :cpp:func:`dir_probe()`. This is passed the cache ID (:arg:`key`), a stripe (:arg:`d`), and a
+last collision (:arg:`last_collision`). The last of these is an in and out parameter, updated as useful during the
+probe.
+
+Given an ID, the top half (64 bits) is used as a :ref:`segment <dir-segment>` index, taken modulo the number of segments in
+the directory. The bottom half is used as a :ref:`bucket <dir-bucket>` index, taken modulo the number of buckets per
+segment. The :arg:`last_collision` value is used to mark the last matching entry returned by `dir_probe`.
+
+After computing the appropriate bucket, the entries in that bucket are searched to find a match. In this case a match is
+detected by comparison of the bottom 12 bits of the cache ID (the *cache tag*). The search starts at the base entry for
+the bucket and then proceeds via the linked list of entries from that first entry. If a tag match is found and there is
+no :arg:`collision` then that entry is returned and :arg:`last_collision` is updated to that entry. If :arg:`collision`
+is set, then if it isn't the current match the search continues down the linked list, otherwise :arg:`collision` is
+cleared and the search continues. The effect of this is that matches are skipped until the last returned match
+(:arg:`last_collision`) is found, after which the next match (if any) is returned. If the search falls off the end of
+the linked list then a miss result is returned (if no last collision), otherwise the probe is restarted after clearing
+the collision on the presumption that the entry for the collision has been removed from the bucket. This can lead to
+repeats among the returned values but guarantees that no valid entry will be skipped.
+
+Last collision can therefore be used to restart a probe at a later time. This is important because the match returned
+may not be the actual object - although the hashing of the cache ID to a bucket and the tag matching is unlikely to
+create false positives, that is possible. When a fragment is read the full cache ID is available and checked and if
+wrong, that read can be discarded and the next possible match from the directory found because the cache virtual
+connection tracks the last collision value.
+
+----------------
+Cache Operations
+----------------
 
 Cache activity starts after the HTTP request header has been parsed and remapped. Tunneled transactions do not interact with the cache because the headers are never parsed.
 
@@ -588,8 +648,8 @@ The three basic cache operations are lookup, read, and write. We will take delet
 
 After the client request header is parsed and is determined to be potentially cacheable, a `cache lookup`_ is done. If successful a `cache read`_ is attempted. If either the lookup or the read fails and the content is considered cacheable then a `cache write`_ is attempted.
 
-キャッシャビリティ
-=================
+Cacheability
+============
 
 The first thing done with a request with respect to cache is to determine whether it is potentially a valid object for the cache. After initial parsing and remapping this check is done primarily to detect a negative result because if so all further cache processing is skipped -- it will not be put in to the cache nor will a cache lookup be done. There are a number of prerequisites along with configuration options to change them. Additional cacheability checks are done later in the process when more is known about the transaction (such as plugin operations and the origin server response). Those checks are described as appropriate in the sections on the relevant operations.
 
@@ -632,8 +692,8 @@ A plugin can call :c:func:`TSHttpTxnReqCacheableSet()` to force the request to b
 
 .. [#] The code appears to check :file:`cache.config` in this logic by setting the ``does_config_permit_lookup`` in the ``cache_info.directives`` of the state machine instance but I can find no place where the value is used. The directive ``does_config_permit_storing`` is set and later checked so the directive (from the administrator point of view) is effective in preventing caching of the object.
 
-キャッシュの探索
-===============
+Cache Lookup
+============
 
 If the initial request is not determined to be cache invalid then a lookup is done. Cache lookup determines if an object is in the cache and if so, where it is located. In some cases the lookup proceeds to read the first ``Doc`` from disk to verify the object is still present in the cache.
 
@@ -643,11 +703,11 @@ There are three basic steps to a cache lookup.
 
    This is normally computed using the request URL but it can be overridden :ref:`by a plugin <cache-key>` . As far as I can tell the cache index string is not stored anywhere, it presumed computable from the client request header.
 
-#. The cache volume is determined (based on the cache key).
+#. The cache stripe is determined (based on the cache key).
 
    The cache key is used as a hash key in to an array of :cpp:class:`Vol` instances. The construction and arrangement of this array is the essence of how volumes are assigned.
 
-#. The cache volume directory is probed using the index key computed from the cache key.
+#. The cache stripe directory :ref:`is probed <dir-probe>` using the index key computed from the cache key.
 
    Various other lookaside directories are checked as well, such as the :ref:`aggregation buffer <aggregation-buffer>`.
 
@@ -657,8 +717,8 @@ There are three basic steps to a cache lookup.
 
 If the lookup succeeds then a more detailed directory entry (struct :cpp:class:`OpenDir`) is created. Note that the directory probe includes a check for an already extant ``OpenDir`` which if found is returned without additional work.
 
-キャッシュリード
-===============
+Cache Read
+==========
 
 Cache read starts after a successful `cache lookup`_. At this point the first ``Doc`` has been loaded in to memory and can be consulted for additional information. This will always contain the HTTP headers for all alternates of the object.
 
@@ -694,29 +754,51 @@ If this is zero then the built caclulations are used which compare the freshness
 
 If the object is not stale then it is served to the client. If stale the client request may be changed to an ``If Modified Since`` request to revalidate.
 
-The request is served using a standard virtual connection tunnel (``HttpTunnel``) with the :cpp:class:`CacheVC` acting as the producer and the client ``NetVC`` acting as the sink. If the request is a range request this can be modified with a transform to select the appropriate parts of the object or, if the request contains a single range, it can use the range acceleration.
+The request is served using a standard virtual connection tunnel (``HttpTunnel``) with the :cpp:class:`CacheVC` acting
+as the producer and the client ``NetVC`` acting as the sink. If the request is a range request this can be modified with
+a transform to select the appropriate parts of the object or, if the request contains a single range, it can use the
+range acceleration.
 
-Range acceleration is done by consulting a fragment offset table attached to the earliest ``Doc`` which contains offsets for all fragments past the first. This allows loading the fragment containing the first requested byte immediately rather than performing reads on the intermediate fragments.
+Range acceleration is done by consulting a fragment offset table attached to the earliest ``Doc`` which contains offsets
+for all fragments past the first. This allows loading the fragment containing the first requested byte immediately
+rather than performing reads on the intermediate fragments.
 
-キャッシュライト
-===============
+Cache Write
+===========
 
-Writing to cache is handled by an instance of the class :cpp:class:`CacheVC`. This is a virtual connection which receives data and writes it to cache, acting as a sink. For a standard transaction data transfers between virtual connections (*VConns*) are handled by :ccp:class:HttpTunnel. Writing to cache is done by attaching a ``CacheVC`` instance as a tunnel consumer. It therefore operates in parallel with the virtual connection that transfers data to the client. The data does not flow to the cache and then to the client, it is split and goes both directions in parallel. This avoids any data synchronization issues between the two.
+Writing to cache is handled by an instance of the class :cpp:class:`CacheVC`. This is a virtual connection which
+receives data and writes it to cache, acting as a sink. For a standard transaction data transfers between virtual
+connections (*VConns*) are handled by :cpp:class:HttpTunnel. Writing to cache is done by attaching a ``CacheVC``
+instance as a tunnel consumer. It therefore operates in parallel with the virtual connection that transfers data to the
+client. The data does not flow to the cache and then to the client, it is split and goes both directions in parallel.
+This avoids any data synchronization issues between the two.
 
 .. sidebar:: Writing to disk
 
-   The actual write to disk is handled in a separate thread dedicated to I/O operations, the AIO threads. The cache logic marshals the data and then hands the operation off to the AIO thread which signals back once the operation completes.
+   The actual write to disk is handled in a separate thread dedicated to I/O operations, the AIO threads. The cache
+   logic marshals the data and then hands the operation off to the AIO thread which signals back once the operation
+   completes.
 
-While each ``CacheVC`` handles its transactions independently, they do interact at the volume level as each ``CacheVC`` makes calls to the volume object to write its data to the volume content. The ``CacheVC`` accumulates data internally until either the transaction is complete or the amount of data to write exceeds the target fragment size. In the former case the entire object is submitted to the volume to be written. In the latter case a target fragment size amount of data is submitted and the ``CacheVC`` continues to operate on subsequent data. The volume in turn places these write requests in an holding area called the `aggregation buffer`_.
+While each ``CacheVC`` handles its transactions independently, they do interact at the volume level as each ``CacheVC``
+makes calls to the volume object to write its data to the volume content. The ``CacheVC`` accumulates data internally
+until either the transaction is complete or the amount of data to write exceeds the target fragment size. In the former
+case the entire object is submitted to the volume to be written. In the latter case a target fragment size amount of
+data is submitted and the ``CacheVC`` continues to operate on subsequent data. The volume in turn places these write
+requests in an holding area called the `aggregation buffer`_.
 
-For objects under the target fragment size there is no consideration of order, the object is simply written to the volume content. For larger objects the earliest ``Doc`` is written first and the first ``Doc`` written last. This provides some detection ability should the object be overwritten. Because of the nature of the write cursor no fragment after the first fragment (in the earliest ``Doc``) can be overwritten without also overwriting that first fragment (since we know at the time the object was finalized in the cache the write cursor was at the position of the first ``Doc``).
+For objects under the target fragment size there is no consideration of order, the object is simply written to the
+volume content. For larger objects the earliest ``Doc`` is written first and the first ``Doc`` written last. This
+provides some detection ability should the object be overwritten. Because of the nature of the write cursor no fragment
+after the first fragment (in the earliest ``Doc``) can be overwritten without also overwriting that first fragment
+(since we know at the time the object was finalized in the cache the write cursor was at the position of the first
+``Doc``).
 
 .. note:: It is the responsibility of the ``CacheVC`` to not submit writes that exceed the target fragment size.
 
 .. how does the write logic know if it's an original object write or an update to an existing object?
 
-更新
-----
+Update
+------
 
 Cache write also covers the case where an existing object in the cache is modified. This occurs when
 
@@ -724,31 +806,148 @@ Cache write also covers the case where an existing object in the cache is modifi
 * An alternate of the object is retrieved from an origin server and added to the object.
 * An alternate of the object is removed (e.g., due to a ``DELETE`` request).
 
-In every case the metadata for the object must be modified. Because |TS| never updates data already in the cache this means the first ``Doc`` will be written to the cache again and the volume directory entry updated. Because a client request has already been processed the first ``Doc`` has been read from cache and is in memory. The alternate vector is updated as appropriate (an entry added or removed, or changed to contain the new HTTP headers), and then written to disk. It is possible for multiple alternates to be updated by different ``CacheVC`` instances at the same time. The only contention is the first ``Doc``, the rest of the data for each alternate is completely independent.
+In every case the metadata for the object must be modified. Because |TS| never updates data already in the cache this
+means the first ``Doc`` will be written to the cache again and the volume directory entry updated. Because a client
+request has already been processed the first ``Doc`` has been read from cache and is in memory. The alternate vector is
+updated as appropriate (an entry added or removed, or changed to contain the new HTTP headers), and then written to
+disk. It is possible for multiple alternates to be updated by different ``CacheVC`` instances at the same time. The only
+contention is the first ``Doc``, the rest of the data for each alternate is completely independent.
 
 .. _aggregation-buffer:
 
-集約バッファ
-------------
+Aggregation Buffer
+------------------
 
-Disk writes to cache are handled through an *aggregation buffer*. There is one for each :cpp:class:`Vol` instance.
-To minimize the number of system calls data is written to disk in units of roughly :ref:`target fragment size <target-fragment-size>` bytes. The algorithm used is simple - data is piled up in the aggregation buffer until no more will fit without going over the targer fragment size, at which point the buffer is written to disk and the volume directory entries for objects with data in the buffer are updated with the actual disk locations for those objects (which are determined by the write to disk action). After the buffer is written it is cleared and process repeats. There is a special lookup table for the aggregation buffer so that object lookup can find cache data in that memory.
+Disk writes to cache are handled through an *aggregation buffer*. There is one for each :cpp:class:`Vol` instance. To
+minimize the number of system calls data is written to disk in units of roughly :ref:`target fragment size
+<target-fragment-size>` bytes. The algorithm used is simple - data is piled up in the aggregation buffer until no more
+will fit without going over the targer fragment size, at which point the buffer is written to disk and the volume
+directory entries for objects with data in the buffer are updated with the actual disk locations for those objects
+(which are determined by the write to disk action). After the buffer is written it is cleared and process repeats. There
+is a special lookup table for the aggregation buffer so that object lookup can find cache data in that memory.
 
-Because data in the aggregation buffer is visible to other parts of the cache, particularly `cache lookup`_, there is no need to push a partial filled aggregation buffer to disk. In effect any such data is effectively memory cached until enough additional cache content arrives to fill the buffer.
+Because data in the aggregation buffer is visible to other parts of the cache, particularly `cache lookup`_, there is no
+need to push a partial filled aggregation buffer to disk. In effect any such data is effectively memory cached until
+enough additional cache content arrives to fill the buffer.
 
-The target fragment size has little effect on small objects because the fragment sized is used only to parcel out disk write operations. For larger objects the effect very significant as it causes those objects to be broken up in to fragments at different locations on in the volume. Each fragment write has its own entry in the volume directory which are computational chained (each cache key is computed from the previous one). If possible a fragment table is accumulated in the earliest ``Doc`` which has the offsets of the first byte for each fragment.
+The target fragment size has little effect on small objects because the fragment sized is used only to parcel out disk
+write operations. For larger objects the effect very significant as it causes those objects to be broken up in to
+fragments at different locations on in the volume. Each fragment write has its own entry in the volume directory which
+are computational chained (each cache key is computed from the previous one). If possible a fragment table is
+accumulated in the earliest ``Doc`` which has the offsets of the first byte for each fragment.
 
-退避
-----
+Evacuation Mechanics
+--------------------
 
-By default the write cursor will overwrite (de facto evict from cache) objects as it proceeds once it has gone around the volume content at least once. In some cases this is not acceptable and the object is *evacuated* by reading it from the cache and then writing it back to cache which moves the physical storage of the object from in front of the write cursor to behind the write cursor. Objects that are evacuated are those that are active in either a read or write operation, or objects that are pinned [#]_.
+By default the write cursor will overwrite (de facto evict from cache) objects as it proceeds once it has gone around
+the cache stripe at least once. In some cases this is not acceptable and the object is *evacuated* by reading it from
+the cache and then writing it back to cache which moves the physical storage of the object from in front of the write
+cursor to behind the write cursor. Objects that are evacuated are handled in this way based on data in stripe data
+structures (attached to the :cpp:class:`Vol` instance).
 
-Evacuation starts by dividing up the volume content in to a set of regions of ``EVACUATION_BUCKET_SIZE`` bytes. The :cpp:member:`Vol::evacuate` member is an array with an element for each region. Each element is a doubly linked list of :cpp:class:`EvacuationBlock` instances. Each instance contains a :cpp:class:`Dir` that specifies the document to evacuate. Objects to be evacuated are descrinbed in an ``EvacuationBlock`` which is put in to an evacuation bucket based on the offset of the storage location.
+Evacuation data structures are defined by dividing up the volume content in to a disjoint and contiguous set of regions
+of ``EVACUATION_BUCKET_SIZE`` bytes. The :cpp:member:`Vol::evacuate` member is an array with an element for each
+evacuation region. Each element is a doubly linked list of :cpp:class:`EvacuationBlock` instances. Each instance
+contains a :cpp:class:`Dir` that specifies the fragment to evacuate. It is assumed that an evacuation block is placed in
+the evacuation bucket (array element) that corresponds to the evacuation region in which the fragment is located
+although no ordering per bucket is enforced in the linked list (this sorting is handled during evacuation). Objects are
+evacuated by specifying the first or earliest fragment in the evactuation block. The evactuation operation will then
+continue the evacuation for subsequent fragments in the object by adding those fragments in evacuation blocks. Note that
+the actual evacuation of those fragments is delayed until the write cursor reaches the fragments, it is not ncessarily
+done at the time the first / earliest fragment is evacuated.
 
-There are two types of evacuations, reader based and forced. The ``EvacuationBlock`` has a reader count to track this. If the reader count is zero, then it is a forced evacuation and the the target, if it exists, will be evacuated when the write cursor gets close. If the reader value is non-zero then it is a count of entities that are currently expecting to be able to read the object. Readers increment the count when they require read access to the object, or create the ``EvacuationBlock`` with a count of 1. When a reader is finished with the object it decrements the count and removes the ``EvacuationBlock`` if the count goes to zero. If the ``EvacuationBlock`` already exists with a count of zero, the count is not modified and the number of readers is not tracked, so the evacuation be valid as long as the object exists.
+There are two types of evacuations, reader based and forced. The ``EvacuationBlock`` has a reader count to track this.
+If the reader count is zero, then it is a forced evacuation and the the target, if it exists, will be evacuated when the
+write cursor gets close. If the reader value is non-zero then it is a count of entities that are currently expecting to
+be able to read the object. Readers increment the count when they require read access to the object, or create the
+``EvacuationBlock`` with a count of 1. When a reader is finished with the object it decrements the count and removes the
+``EvacuationBlock`` if the count goes to zero. If the ``EvacuationBlock`` already exists with a count of zero, the count
+is not modified and the number of readers is not tracked, so the evacuation is valid as long as the object exists.
 
-Objects are evacuated as the write cursor approaches. The volume calculates the current amount of
+Evacuation is driven by cache writes, essentially in :cpp:member:`Vol::aggWrite`. This method processes the pending
+cache virtual connections that are trying to write to the stripe. Some of these may be evacuation virtual connections.
+If so then the completion callback for that virtual connection is called as the data is put in to the aggregation
+buffer.
 
-Before doing a write, the method :cpp:func:`Vol::evac_range()` is called to start an evacuation. If an eva
+When no more cache virtual connections can be processed (due to an empty queue or the aggregation buffer filling) then
+:cpp:member:`Vol::evac_range` is called to clear the range to be overwritten plus an additional
+:ts:const:`EVACUATION_SIZE` range. The buckets covering that range are checked. If there are any items in the buckets a
+new cache virtual connection (a "doc evacuator") is created and used to read the evacuation item closest to the write
+cursor (i.e. with the smallest offset in the stripe) instead of the aggregation write proceeding. When the read
+completes it is checked for validity and if valid, the cache virtual connection for it is placed at the front of the
+write queue for the stripe and the write aggregation resumed.
 
-.. [#] `Work is under way <https://issues.apache.org/jira/browse/TS-2020>`_ on extending this to include objects that are in the ram cache.
+Before doing a write, the method :cpp:func:`Vol::evac_range()` is called to start an evacuation. If any fragments are
+found in the buckets in the range the earliest such fragment (smallest offset, closest to the write cursor) is selected
+and read from disk and the aggregation buffer write is suspended. The read is done via a cache virtual connection which
+also effectively serves as the read buffer. Once the read is complete, that cache virtual connection instance (the "doc
+evacuator") is place at the front of the stripe write queue and written out in turn. Because the fragment data is now in
+memory it is acceptable to overwrite the disk image.
+
+Note that when normal stripe writing is resumed, this same check is done again, each time evauating (if needed) a
+fragment and queuing them for writing in turn.
+
+Updates to the directory are done when the write for the evacuated fragment completes. Multi-fragment objects are
+detected after the read completes for a fragment. If it is not the first fragment then the next fragment is marked for
+evacuation (which in turn, when it is read, will pull the subsequent fragment). The logic doesn't seem to check the
+length and presumes that the end of the alternate is when the next key is not in the directory.
+
+This interacts with the "one at a time" strategy of the aggregation write logic. If a fragment is close to the fragment being evacuated it may end up in the same evacuation bucket. Because the aggregation write checks every time for the "next" fragment to evacuate it will find that next fragment and evacuate it before it is overwritten.
+
+.. note
+
+   I do not understand the extra key list that is present in an evacuation block. It is labeled as needed for
+   "collisions" but I am unclear on what might be colliding. The bucket entries are stored and matched by stripe offset
+   but if two fragments collide on their offset, only one can be valid. Based on how :ref:`directory probing
+   <dir-probe>` works and the logic of :cpp:func:`evacuate_fragments()` it appears that rather than determine which
+   entry in a directory bucket is the correct one, all of them are marked for evacuation (thereby handling
+   "collisions"). However, each one could have a distinct fragment size and that is set for all of the reads by the
+   first fragment found in the directory. The intent seems to be to read all fragments that collide at the same starting
+   offset and then figure out which one was really on the disk after the read by looking through the key list. However,
+   this seems to presume those fragments will all be the same size, which seems unreasonable. I would think it would
+   also be necessary to update the size in the :cpp:class:`Dir` instance in the evacuation block to the be largest size
+   found among the collisions.
+
+Evacuation Operation
+--------------------
+
+The primary source of fragments to be evacuated are active fragments. That is fragments which are currently open, to be read or written. This is tracked by the reader value in the evacuation blocks noted above.
+
+If object pinning is enabled then a scan is done on a regular basis as the write cursor moves to detected pinned objects and mark them for evacuation.
+
+Fragments can also be evacuated through *hit evacuation*. This is configured by :ts:cv:`proxy.config.cache.hit_evacuate_percent` and :ts:cv:`proxy.config.cache.hit_evacuate_size_limit`. When a fragment is read it is checked to see if it is close and in front of the write cursor, close being less than the specified percent of the size of the stripe. If set at the default value of 10, then if the fragment is withing 10% of the size of the stripe it is marked for evacuation. This is cleared if the write cursor passes through the fragment while it remains open (as all open objects are evacuated). If when the object is closed the fragment is still marked then it is placed in the appropriate evacuation bucket.
+
+Initialization
+==============
+
+Initialization starts with an instance of :cpp:class:`Store` reading the storage configuration file, by default
+:file:`storage.config`. For each valid element in the file an instance of :cpp:class:`Span` is created. These are of
+basically four types,
+
+* File
+* Directory
+* Disk
+* Raw device
+
+After setting all the `Span` instances they are grouped by device id to internal linked lists attached to the
+:cpp:member:`Store::disk` array [#]_. Spans that refer to the same directory, disk, or raw device are coalesced in to a
+single span. Spans that refer to the same file with overlapping offsets are also coalesced [#]_. This is all done in :c:func:`ink_cache_init()` called during startup.
+
+After configuration initialization the cache processor is started by calling :ccp:func:`CacheProcessor::start()`. This
+does a number of things.
+
+For each valid span, an instance of :cpp:class:`CacheDisk` is created. This class is a continuation and so can be used
+to perform potentially blocking operations on the span. This what is passed to the AIO threads to be called when an I/O
+operation completes. These are then dispatched to AIO threads to perform storage unit initialization. After all of those
+have completed, the resulting storage is distributed across the volumes in :c:func:`cplist_reconfigure`. The :cpp:class:`CacheVol` instances are created at this time.
+
+.. rubric:: Footnotes
+
+.. [#] `Work is under way <https://issues.apache.org/jira/browse/TS-2020>`_ on extending this to include objects that
+   are in the ram cache.
+
+.. [#] This linked list is mostly ignored in later processing, causing all but one file or directory storage units on
+   the same device to be ignored. See `TS-1869 <https://issues.apache.org/jira/browse/TS-1869>`_.
+
+.. [#] It is unclear to me how that can happen, as the offsets are computed later and should all be zero at the time the
+   spans are coalesced, and as far as I can tell the sort / coalesce is only done during initialization.
