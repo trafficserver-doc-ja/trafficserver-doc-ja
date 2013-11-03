@@ -413,31 +413,29 @@ Tools that will help manage pushing
 Pinning Content in the Cache
 ============================
 
-**Cache Pinning Option** は HTTP オブジェクトをキャッシュに  Traffic Server を設定します。
+**Cache Pinning Option** は特定の時間の間 HTTP オブジェクトをキャッシュ
+に確実に入れておくように Traffic Server を設定します。最もポピュラーな
+オブジェクトが必要とされるときにキャッシュされていることと、 Traffic
+Server が重要なオブジェクトを削除することを防ぐことを確実にしたい際に
+このオプションが使えます。Traffic Server は ``Cache-Control`` ヘッダー
+を監視し、本当にキャッシュ可能な場合にオブジェクトをキャッシュに留めます。
 
-The **Cache Pinning Option** configures Traffic Server to keep certain
-HTTP objects in the cache for a specified time. You can use this option
-to ensure that the most popular objects are in cache when needed and to
-prevent Traffic Server from deleting important objects. Traffic Server
-observes ``Cache-Control`` headers and pins an object in the cache only
-if it is indeed cacheable.
+キャッシュを留めるルールを設定するためには
 
-To set cache pinning rules
-
-3. Make sure the following variable in `records.config`_ is set
+1. `records.config`_ の次の変数がセットされていることを確認してくださ
+   い。
 
    -  `proxy.config.cache.permit.pinning`_
 
-4. Add a rule in `cache.config`_ for each
-   URL you want Traffic Server to pin in the cache. For example:
+2. Traffic Server にキャッシュに留めさせたい URL 毎に `cache.config`_
+   にルールを追加してください。例:
 
    ::
 
        :::text
        url_regex=^https?://(www.)?apache.org/dev/ pin-in-cache=12h
 
-5. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+3. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 To Cache or Not to Cache?
 =========================
