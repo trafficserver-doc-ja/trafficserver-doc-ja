@@ -355,36 +355,36 @@ Server はこのオプションが無効化されるまで `update.config`_ フ�
 Pushing Content into the Cache
 ==============================
 
-Traffic Server supports the HTTP ``PUSH`` method of content delivery.
-Using HTTP ``PUSH``, you can deliver content directly into the cache
-without client requests.
+Traffic Server はコンテンツ配信に HTTP ``PUSH`` メソッドをサポートして
+います。HTTP ``PUSH`` を使用すると、クライアントからのリクエスト無しに
+コンテンツをキャッシュの中に入れることができます。
 
 Configuring Traffic Server for PUSH Requests
 --------------------------------------------
 
-Before you can deliver content into your cache using HTTP ``PUSH``, you
-must configure Traffic Server to accept ``PUSH`` requests.
+HTTP ``PUSH`` を使用してコンテンツをキャッシュの中に入れる前に、
+Traffic Server が ``PUSH`` リクエストを受け入れるように設定する必要が
+あります。
 
-To configure Traffic Server to accept ``PUSH`` requests
+Traffic Server が ``PUSH`` リクエストを受け入れる用に設定するには
 
-1. Edit `records.config`_, modify the super mask to allow ``PUSH`` request.
+1. `records.config`_ を編集してください。マスクを ``PUSH`` リクエスト
+   を許可するように変更してください。
 
    -  `proxy.config.http.quick_filter.mask`_
 
-2. Edit the following variable in `records.config`_, enable
-   the push_method.
+2. push_method を有効にする `records.config`_ の次の変数を変更してください。
 
    -  `proxy.config.http.push_method_enabled`_
 
-3. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+3. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Understanding HTTP PUSH
 -----------------------
 
-``PUSH`` uses the HTTP 1.1 message format. The body of a ``PUSH``
-request contains the response header and response body that you want to
-place in the cache. The following is an example of a ``PUSH`` request:
+``PUSH`` は HTTP 1.1 メッセージフォーマットを使用します。 ``PUSH`` リク
+エストのボディにキャッシュに入れたいレスポンスヘッダーとレスポンスボ
+ディを含めてください。下記は ``PUSH`` リクエストの例です。
 
 ::
 
@@ -399,18 +399,21 @@ place in the cache. The following is an example of a ``PUSH`` request:
     a
     </HTML>
 
-**IMPORTANT:** Your header must include ``Content-length`` -
-``Content-length`` must include both ``header`` and ``body byte count``.
+**重要:** ヘッダーは ``Contetnt-length`` を含んでいる必要があります。
+つまり ``Contetn-length`` は ``header`` と ``body byte count`` の両方
+を含む必要があります。
 
 Tools that will help manage pushing
 -----------------------------------
 
-There is a perl script for pushing, `tools/push.pl`_,
-which can help you understanding how to write some script for pushing
-content.
+プッシュするための perl スクリプトがあります。`tools/push.pl`_ です。
+これはコンテンツをプッシュするためのスクリプトの書き方を理解することに
+役立ちます。
 
 Pinning Content in the Cache
 ============================
+
+**Cache Pinning Option** は HTTP オブジェクトをキャッシュに  Traffic Server を設定します。
 
 The **Cache Pinning Option** configures Traffic Server to keep certain
 HTTP objects in the cache for a specified time. You can use this option
