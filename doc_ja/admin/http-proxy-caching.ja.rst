@@ -18,12 +18,12 @@ HTTP Proxy Caching
   specific language governing permissions and limitations
   under the License.
 
-Web proxy caching enables you to store copies of frequently-accessed web
-objects (such as documents, images, and articles) and then serve this
-information to users on demand. It improves performance and frees up
-Internet bandwidth for other tasks.
+ウェブプロキシーキャッシュは頻繁にアクセスされるウェブオブジェクト(ド
+キュメントや画像、記事など)のコピーを保存し、ユーザーの求めに応じてこ
+れらを配信することを可能にします。これはパフォーマンスを向上させ、イン
+ターネットの帯域を他のタスクのために空けます。
 
-This chapter discusses the following topics:
+この章では次のトピックを扱います。
 
 .. toctree::
    :maxdepth: 2
