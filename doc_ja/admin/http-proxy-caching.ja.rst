@@ -357,7 +357,7 @@ Pushing Content into the Cache
 
 Traffic Server はコンテンツ配信に HTTP ``PUSH`` メソッドをサポートして
 います。HTTP ``PUSH`` を使用すると、クライアントからのリクエスト無しに
-コンテンツをキャッシュの中に入れることができます。
+直接コンテンツをキャッシュの中に入れることができます。
 
 Configuring Traffic Server for PUSH Requests
 --------------------------------------------
@@ -366,14 +366,14 @@ HTTP ``PUSH`` を使用してコンテンツをキャッシュの中に入れる
 Traffic Server が ``PUSH`` リクエストを受け入れるように設定する必要が
 あります。
 
-Traffic Server が ``PUSH`` リクエストを受け入れる用に設定するには
+Traffic Server が ``PUSH`` リクエストを受け入れるように設定するには
 
 1. `records.config`_ を編集してください。マスクを ``PUSH`` リクエスト
    を許可するように変更してください。
 
    -  `proxy.config.http.quick_filter.mask`_
 
-2. push_method を有効にする `records.config`_ の次の変数を変更してください。
+2. `records.config`_ の次の変数を編集して、push_method を有効にしてください。
 
    -  `proxy.config.http.push_method_enabled`_
 
@@ -383,8 +383,8 @@ Understanding HTTP PUSH
 -----------------------
 
 ``PUSH`` は HTTP 1.1 メッセージフォーマットを使用します。 ``PUSH`` リク
-エストのボディにキャッシュに入れたいレスポンスヘッダーとレスポンスボ
-ディを含めてください。下記は ``PUSH`` リクエストの例です。
+エストのボディはキャッシュに入れたいレスポンスヘッダーとレスポンスボ
+ディを含みます。下記は ``PUSH`` リクエストの例です。
 
 ::
 
@@ -399,9 +399,9 @@ Understanding HTTP PUSH
     a
     </HTML>
 
-**重要:** ヘッダーは ``Contetnt-length`` を含んでいる必要があります。
-つまり ``Contetn-length`` は ``header`` と ``body byte count`` の両方
-を含む必要があります。
+**重要:** ヘッダーは ``Contetnt-length`` を含んでいる必要があります -
+``Contetn-length`` は ``header`` と ``body byte count`` の両方を含む必
+要があります。
 
 Tools that will help manage pushing
 -----------------------------------
@@ -455,7 +455,7 @@ Traffic Server は設定オプションやファイルに指定したディレ�
 Client Directives
 -----------------
 
-デフォルトでは Traffic Server は次の **requires headers** を持つオブジェ
+デフォルトでは Traffic Server は次の **request headers** を持つオブジェ
 クトをキャッシュ *しません* 。
 
 -  ``Authorization``: header
@@ -501,7 +501,7 @@ Traffic Server がクライアントからの ``no-cache`` ディレクティブ
 Origin Server Directives
 ------------------------
 
-デフォルトでは Traffic Server は次の **respons** や **headers** を持つ
+デフォルトでは Traffic Server は次の **respons headers** を持つ
 ようなオブジェクトをキャッシュ *しません*。
 
 -  ``Cache-Control: no-store`` header
@@ -526,9 +526,9 @@ Configuring Traffic Server to Ignore Server no-cache Headers
 
 デフォルトでは Traffic Server は ``Cache-Control: no-cache`` ディレク
 ティブを正確に守ります。``no-cache`` ヘッダーが付いているオリジンサー
-バーからのレスポンスはキャッシュに保存されません。また、キャッシュの中
-の古いコピーは削除されます。 ``no-cache`` ヘッダーを無視するように
-Traffic Server を設定した場合、Traffic Server は ``no-``\
+バーからのレスポンスはキャッシュに保存されません。また、以前キャッシュ
+されたオブジェクトののコピーは削除されます。 ``no-cache`` ヘッダーを無
+視するように Traffic Server を設定した場合、Traffic Server は ``no-``\
 **``store``** ヘッダーも無視します。``no-cache`` ディレクティブを守る
 デフォルトの振る舞いはほとんどの場合に適切です。
 
@@ -553,8 +553,8 @@ Traffic Server を設定した場合、 ``WWW-Authenticate`` ヘッダーを持�
 てのオブジェクトは次のリクエストの為にキャッシュに保存されます。
 しかし、 ``WWW-Authenticate`` ヘッダーを持つオブジェクトをキャッシュし
 ないデフォルトの振る舞いは多くの場合に適切です。 ``WWW-Authenticate``
-ヘッダーを無視するように Traffic Server を設定するのは HTTP 1.1 に精通しいる
-場合にだけにしてください。
+ヘッダーを無視するように Traffic Server を設定するのは HTTP 1.1 に精通
+してる場合にだけにしてください。
 
 ``WWW-Authenticate`` ヘッダーを無視するように Traffic Server を設定す
 るには
@@ -579,7 +579,7 @@ Configuration Directives
    **``.asp``** で終わったり、クエスチョンマーク (**``?``**)、セミコロ
    ン (**``;``**) や **``cgi``** を含んでいたりする URL のオブジェクト
    より詳しくは  `Caching Dynamic Content`_ を参照してください。
--  ``Cookie:`` ヘッダーをに対して返されるオブジェクトをキャッシュする
+-  ``Cookie:`` ヘッダーに対して返されるオブジェクトをキャッシュする
    (`Caching Cookied Objects`_ 参照)
 -  `cache.config`_ ファイルの ``never-cache`` ルールを守る
 
