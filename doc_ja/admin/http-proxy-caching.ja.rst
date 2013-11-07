@@ -18,12 +18,12 @@ HTTP Proxy Caching
   specific language governing permissions and limitations
   under the License.
 
-Web proxy caching enables you to store copies of frequently-accessed web
-objects (such as documents, images, and articles) and then serve this
-information to users on demand. It improves performance and frees up
-Internet bandwidth for other tasks.
+ウェブプロキシーキャッシュは頻繁にアクセスされるウェブオブジェクト(ド
+キュメントや画像、記事など)のコピーを保存し、ユーザーの求めに応じてこ
+れらを配信することを可能にします。これはパフォーマンスを向上させ、イン
+ターネットの帯域を他のタスクのために空けます。
 
-This chapter discusses the following topics:
+この章では次のトピックを扱います。
 
 .. toctree::
    :maxdepth: 2
@@ -103,7 +103,7 @@ Traffic Server はキャッシュした HTTP オブジェクトが新しいか�
 
    いくつかの HTTP オブジェクトは ``Expire`` ヘッダーや ``max-age`` ヘッダーを含んでいます。
    これらはオブジェクトがどれくらいの期間キャッシュできるかどうかを明確に定義しています。
-   Traffic Server はオブジェクトがフレッシュであるかどうかを決定するために、
+   Traffic Server はオブジェクトが新鮮であるかどうかを決定するために、
    現在時刻と有効期限を比較します。
 
 -  **Checking the ``Last-Modified`` / ``Date`` header**
@@ -112,7 +112,6 @@ Traffic Server はキャッシュした HTTP オブジェクトが新しいか�
    Traffic Server はフレッシュネスリミットを
    次の式で計算します。
 
-   ::
        freshness_limit = ( date - last_modified ) * 0.10
 
    この *date* はオブジェクトのサーバーのレスポンスヘッダーの日付で、*last_modified* は
@@ -142,12 +141,12 @@ Modifying Aging Factor for Freshness Computations
 -------------------------------------------------
 
 オブジェクトが有効期限に関する情報を持っていない場合、Traffic Server は
- ``Last-Modified`` と ``Date`` ヘッダーからフレッシュネスを見積もります。
+ ``Last-Modified`` と ``Date`` ヘッダーから新鮮さを見積もります。
 デフォルトでは Traffic Server は最後に更新されてからの経過時間の 10 %
 キャッシュします。
 必要に応じて、増減することができます。
 
-フレッシュネスの計算のための期間の要素を変更するためには、
+新鮮さの計算のための期間の要素を変更するためには、
 
 1. `records.config`_ の次の値を変更してください。
 
@@ -177,221 +176,215 @@ Setting absolute Freshness Limits
 Specifying Header Requirements
 ------------------------------
 
-To further ensure freshness of the objects in the cache, configure
-Traffic Server to cache only objects with specific headers. By default,
-Traffic Server caches all objects (including objects with no headers);
-you should change the default setting only for specialized proxy
-situations. If you configure Traffic Server to cache only HTTP objects
-with ``Expires`` or ``max-age`` headers, then the cache hit rate will be
-noticeably reduced (since very few objects will have explicit expiration
-information).
+よりいっそうキャッシュしているオブジェクトの新鮮さを確かめるために、
+特定のヘッダーを持っているオブジェクトだけをキャッシュするように
+Traffic Server を設定することもできます。デフォルトでは Traffic Server
+は (ヘッダーがないものも含む) 全てのオブジェクトをキャッシュします。
+特別なプロキシーの状況の場合のみデフォルト設定を変更するべきです。
+Traffic Server を ``Expires`` もしくは ``max-age`` ヘッダーを持つオブ
+ジェクトだけをキャッシュするように設定した場合、キャッシュヒット率は
+明らかに下がるでしょう。(とても少ないオブジェクトしか明確な有効期限の情報をもって
+いないと考えられるためです。)
 
-To configure Traffic Server to cache objects with specific headers
+特定のヘッダーを持つオブジェクトをキャッシュするように Traffic Server を設定するには
 
-1. Edit the following variable in `records.config`_
+1. `records.config`_ の次の変数を変更してください。
 
    -  `proxy.config.http.cache.required_headers`_
 
-2. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して、変更した設定を反映させてください。
 
 Cache-Control Headers
 ---------------------
 
-Even though an object might be fresh in the cache, clients or servers
-often impose their own constraints that preclude retrieval of the object
-from the cache. For example, a client might request that a object *not*
-be retrieved from a cache, or if it does, then it cannot have been
-cached for more than 10 minutes. Traffic Server bases the servability of
-a cached object on ``Cache-Control`` headers that appear in both client
-requests and server responses. The following ``Cache-Control`` headers
-affect whether objects are served from cache:
+キャッシュしたあるオブジェクトが新鮮だと思われる場合であっても、クライ
+アントやサーバーはキャッシュからのオブジェクトの復旧を妨害するようにた
+びたび制限を課します。例えば、あるクライアントがキャッシュから復旧する
+べき *ではない* オブジェクトへリクエストするかもしれません。
+また、それをした場合、10 分以上はキャッシュすることはできません。
+Traffic Server はキャッシュしたオブジェクトの提供可能性をクライアントの
+リクエストとサーバーのレスポンス両方に現れる ``Cache-Control`` ヘッダー
+を根拠に決定しています。
 
--  The ``no-cache`` header, sent by clients, tells Traffic Server that
-   it should not to serve any objects directly from the cache;
-   therefore, Traffic Server will always obtain the object from the
-   origin server. You can configure Traffic Server to ignore client
-   ``no-cache`` headers - refer to `Configuring Traffic Server to Ignore Client no-cache Headers`_
-   for more information.
+次のような ``Cache-Control`` ヘッダーはキャッシュからオブジェクトを提供するかどうかに影響します。
 
--  The ``max-age`` header, sent by servers, is compared to the object
-   age. If the age is less than ``max-age``, then the object is fresh
-   and can be served.
+-  クライアントから送られる ``no-cache`` ヘッダーはどんなオブジェクトも
+   キャッシュから直接返すべきではないということをTraffic Server に示します。
+   従って、Traffic Server は常にオリジンサーバーからオブジェクトを取得します。
+   Traffic Server をクライアントからの ``no-cache`` ヘッダーを無視するように
+   設定することもできます。詳細は `Configuring Traffic Server to Ignore Client no-cache Headers`_
+   を参照してください。
 
--  The ``min-fresh`` header, sent by clients, is an **acceptable
-   freshness tolerance**. This means that the client wants the object to
-   be at least this fresh. Unless a cached object remains fresh at least
-   this long in the future, it is revalidated.
+-  サーバーから送られる ``max-age`` ヘッダーはオブジェクトのキャッシュされて
+   いる時間と比較されます。この時間が ``max-age`` よりも少ない場合、オブジェクトは
+   フレッシュであり配信されます。
 
--  The ``max-stale`` header, sent by clients, permits Traffic Server to
-   serve stale objects provided they are not too old. Some browsers
-   might be willing to take slightly stale objects in exchange for
-   improved performance, especially during periods of poor Internet
-   availability.
+-  クライアントからの ``min-fresh`` ヘッダーは **受け入れることが許容できる新鮮さ** です。
+   これはクライアントが少なくとも指定された程度新鮮であることを望ん
+   でいるということを意味します。キャッシュされたオブジェクトが指定された
+   長さを残さなくなった場合、再取得されます。
 
-Traffic Server applies ``Cache-Control`` servability criteria
-***after*** HTTP freshness criteria. For example, an object might be
-considered fresh but will not be served if its age is greater than its
-``max-age``.
+- クライアントからの ``max-stale`` ヘッダーは Traffic Server に古すぎな
+  い失効したオブジェクトを配信することを許可します。いくつかのブラウザー
+  は特に貧弱な Internet 環境にあるような場合パフォーマンスを向上させる
+  ため、わずかに失効したオブジェクトを受け取ることを望むかもしれません。
+
+Traffic Server は ``Cache-Control`` を HTTP の新鮮さの基準の *** 後に*** 配信可
+能性の基準に適用します。例えば、あるオブジェクトが新鮮だと考えられる場合でも、経
+過時間が ``max-age`` よりも大きいければ、それは配信されません。
 
 Revalidating HTTP Objects
 -------------------------
 
-When a client requests an HTTP object that is stale in the cache,
-Traffic Server revalidates the object. A **revalidation** is a query to
-the origin server to check if the object is unchanged. The result of a
-revalidation is one of the following:
+クライアントがキャッシュの中で新鮮ではなくなった HTTP オブジェクトをリ
+クエストした際、Traffic Server はそのオブジェクトを再検証します。**再
+検証** はオリジンサーバーへオブジェクトが変更されているかどうかを確認
+する問い合わせです。再検証の結果は次のいずれかです。
 
--  If the object is still fresh, then Traffic Server resets its
-   freshness limit and serves the object.
+-  オブジェクトが依然として新鮮な場合、Traffic Server はフレッシュネス
+   リミットをリセットして、そのオブジェクトを配信します。
 
--  If a new copy of the object is available, then Traffic Server caches
-   the new object (thereby replacing the stale copy) and simultaneously
-   serves the object to the client.
+-  オブジェクトの新しいコピーが有効な場合、Traffic Server は新しいオブジェクトを
+   キャッシュします。(従って、新鮮ではないコピーは置き換えられます)
+   また、同時にオブジェクトをクライアントに配信します。
 
--  If the object no longer exists on the origin server, then Traffic
-   Server does not serve the cached copy.
+-  オブジェクトがオリジンサーバー上に存在しない場合、Traffic Server は
+   キャッシュしたコピーを配信しません。
 
--  If the origin server does not respond to the revalidation query, then
-   Traffic Server serves the stale object along with a
-   ``111 Revalidation Failed`` warning.
+-  オリジンサーバーが再検証の問い合わせに応答しない場合、Traffic Server は
+   ``111 Revalidation Failed`` 警告と共に新鮮ではないオブジェクトを配信します。
 
-By default, Traffic Server revalidates a requested HTTP object in the
-cache if it considers the object to be stale. Traffic Server evaluates
-object freshness as described in `HTTP Object Freshness`_.
-You can reconfigure how Traffic
-Server evaluates freshness by selecting one of the following options:
+デフォルトでは Traffic Server はリクエストされた HTTP オブジェクトが新鮮ではない
+と考えられる場合に再検証します。Traffic Server のオブジェクトの新鮮さの評価につ
+いては `HTTP Object Freshness`_ で述べられています。次のオプションの一つを選ぶこ
+とによって、 Traffic Server が新鮮さを評価する方法を再設定することができます。
 
--  Traffic Server considers all HTTP objects in the cache to be stale:
-   always revalidate HTTP objects in the cache with the origin server.
--  Traffic Server considers all HTTP objects in the cache to be fresh:
-   never revalidate HTTP objects in the cache with the origin server.
--  Traffic Server considers all HTTP objects without ``Expires`` or
-   ``Cache-control`` headers to be stale: revalidate all HTTP objects
-   without ``Expires`` or ``Cache-Control`` headers.
+-  Traffic Server はキャッシュしている全ての HTTP オブジェクトが新鮮ではないと考
+   えます。つまり、常にキャッシュの中の HTTP オブジェクトをオリジンサーバーへ再
+   検証します。
+-  Traffic Server はキャッシュしている全ての HTTP オブジェクトを新鮮であると考え
+   ます。つまり、オリジンサーバーへ HTTP オブジェクトを再検証することはありません。
+-  Traffic Server は ``Expires`` や ``Cache-Control`` ヘッダーを持っていない
+   HTTP オブジェクトを新鮮ではないと考えます。つまり、常に ``Expires`` や
+   ``Cache-Control`` ヘッダーのない HTTP オブジェクトを再検証します。
 
-To configure how Traffic Server revalidates objects in the cache, you
-can set specific revalidation rules in `cache.config`_.
+Traffic Server がキャッシュしているオブジェクトを再検証する方法を設定
+するには `cache.config`_ に特定の再検証のルールを設定してください。
 
-To configure revalidation options
+再検証のオプションを設定するには
 
-1. Edit the following variable in `records.config`_
+1. `records.config`_ の次の変数を変更してください。
 
    -  `proxy.config.http.cache.when_to_revalidate`_
 
-2. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して、変更した設定を反映させてください。
 
 Scheduling Updates to Local Cache Content
 =========================================
 
-To further increase performance and to ensure that HTTP objects are
-fresh in the cache, you can use the **Scheduled Update** option. This
-configures Traffic Server to load specific objects into the cache at
-scheduled times. You might find this especially beneficial in a reverse
-proxy setup, where you can *preload* content you anticipate will be in
-demand.
+パフォーマンスをはるかに向上させるため、またキャッシュしている HTTP オブジェクト
+が新鮮であることを確実にするために、**Scheduled Update** オプションを使うことが
+できます。これは特定のオブジェクトをスケジュールされた時間にキャッシュに読み込む
+ように Traffic Server を設定します。リバースプロキシーをセットアップしている際に、
+負荷が心配されるコンテンツを *preload* することができるという点で特に役に立つこ
+とに気づくかもしれません。
 
-To use the Scheduled Update option, you must perform the following
-tasks.
+計画的アップデートオプションを使うためには次のタスクを行う必要があります。
 
--  Specify the list of URLs that contain the objects you want to
-   schedule for update,
--  the time the update should take place,
--  and the recursion depth for the URL.
--  Enable the scheduled update option and configure optional retry
-   settings.
+-  スケジュール通りにアップデートしたいオブジェクトを含む URL のリスト
+   、アップデートが実行されるべき時間、URL の再帰する深さを指定してく
+   ださい。
+-  Scheduled Update オプションを有効にし、オプショナルなリトライ設定を
+   指定してください。
 
-Traffic Server uses the information you specify to determine URLs for
-which it is responsible. For each URL, Traffic Server derives all
-recursive URLs (if applicable) and then generates a unique URL list.
-Using this list, Traffic Server initiates an HTTP ``GET`` for each
-unaccessed URL. It ensures that it remains within the user-defined
-limits for HTTP concurrency at any given time. The system logs the
-completion of all HTTP ``GET`` operations so you can monitor the
-performance of this feature.
+Traffic Server は責任を持つ URL を決定するために、指定された情報を使います。
+各 URL に対して Traffic Server は (適用可能であれば) 全ての再帰的な URL を
+作成し、ユニークな URL リストを生成します。
 
-Traffic Server also provides a **Force Immediate Update** option that
-enables you to update URLs immediately without waiting for the specified
-update time to occur. You can use this option to test your scheduled
-update configuration (refer to `Forcing an Immediate Update`_).
+このリストをもとに、Traffic Server はまだアクセスされていない各 URL に対して
+HTTP ``GET`` リクエストを開始します。このリクエストは常に ユーザーが定義した
+HTTP の並列度の範囲に収まることが保証されています。システムは全ての HTTP ``GET``
+オペレーションの完了を記録します。よって、この機能のパフォーマンスを監視すること
+ができます。
+
+Traffic Server は **Force Immediate Update** オプションも提供します。
+これは URL を指定されたアップデート時間になるまで待つことなく、すぐに
+アップデートすることを可能にします。このオプションをスケジュールされたアップデー
+トの設定をテストするために使うことができます。( `Forcing an Immediate Update`_
+を参照してください)
 
 Configuring the Scheduled Update Option
 ---------------------------------------
 
-To configure the scheduled update option
+Scheduled Update オプションを設定するためには
 
-1. Edit `update.config`_ to
-   enter a line in the file for each URL you want to update.
-2. Edit the following variables in `records.config`_
+1. `update.config`_ をアップデートしたい URL を一行毎に書いてください
+2. `records.config`_ の次の変数を編集してください
 
    -  `proxy.config.update.enabled`_
    -  `proxy.config.update.retry_count`_
    -  `proxy.config.update.retry_interval`_
    -  `proxy.config.update.concurrent_updates`_
 
-3. Run the ``traffic_line -x`` command to apply the configuration
-   changes.
+3. ``traffic_line -x`` コマンドを実行して設定の変更を反映してください
 
 Forcing an Immediate Update
 ---------------------------
 
-Traffic Server provides a **Force Immediate Update** option that enables
-you to immediately verify the URLs listed in the `update.config`_ file.
-The Force Immediate Update option disregards the offset hour and
-interval set in the `update.config`_ file and immediately updates the
-URLs listed.
+Traffic Server は **Force Immediate Update** オプションを提供していま
+す。これは `update.config`_ ファイルにリストされた URL を即時に検証す
+ることを可能にします。Force Immediate Update オプションは
+`update.config`_ ファイルに設定されたオフセット時間と間隔を無視し、リ
+ストされた URL を即時的にアップデートします。
 
-To configure the Force Immediate Update option
+Force Immediate Update オプションをセットするには
 
-1. Edit the following variables in `records.config`_
+1. `records.config`_ の次の値を変更してください。
 
    -  `proxy.config.update.force`_
-   -  Make sure the variable
-      `proxy.config.update.enabled`_ is set to 1.
+   -  `proxy.config.update.enabled`_ に 1 が設定されていることを確認してください
 
-2. Run the ``command traffic_line -x`` to apply the configuration
-   changes.
+2. ``traffic_line -x`` コマンドを実行して設定の変更を反映してください
 
-**IMPORTANT:** When you enable the Force Immediate Update option,
-Traffic Server continually updates the URLs specified in the
-`update.config`_ file until you disable the option. To disable the
-Force Immediate Update option, set the variable
-`proxy.config.update.force`_ to ``0`` (zero).
+**重要:** Force Immediate Update オプションを有効にした場合、Traffic
+Server はこのオプションが無効化されるまで `update.config`_ ファイルに
+指定された URL をアップデートし続けます。Force Immediate Update オプショ
+ンを無効化するためには、`proxy.config.update.force`_ 変数を ``0`` (ゼ
+ロ) にしてください。
 
 Pushing Content into the Cache
 ==============================
 
-Traffic Server supports the HTTP ``PUSH`` method of content delivery.
-Using HTTP ``PUSH``, you can deliver content directly into the cache
-without client requests.
+Traffic Server はコンテンツ配信に HTTP ``PUSH`` メソッドをサポートして
+います。HTTP ``PUSH`` を使用すると、クライアントからのリクエスト無しに
+直接コンテンツをキャッシュの中に入れることができます。
 
 Configuring Traffic Server for PUSH Requests
 --------------------------------------------
 
-Before you can deliver content into your cache using HTTP ``PUSH``, you
-must configure Traffic Server to accept ``PUSH`` requests.
+HTTP ``PUSH`` を使用してコンテンツをキャッシュの中に入れる前に、
+Traffic Server が ``PUSH`` リクエストを受け入れるように設定する必要が
+あります。
 
-To configure Traffic Server to accept ``PUSH`` requests
+Traffic Server が ``PUSH`` リクエストを受け入れるように設定するには
 
-1. Edit `records.config`_, modify the super mask to allow ``PUSH`` request.
+1. `records.config`_ を編集してください。マスクを ``PUSH`` リクエスト
+   を許可するように変更してください。
 
    -  `proxy.config.http.quick_filter.mask`_
 
-2. Edit the following variable in `records.config`_, enable
-   the push_method.
+2. `records.config`_ の次の変数を編集して、push_method を有効にしてください。
 
    -  `proxy.config.http.push_method_enabled`_
 
-3. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+3. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Understanding HTTP PUSH
 -----------------------
 
-``PUSH`` uses the HTTP 1.1 message format. The body of a ``PUSH``
-request contains the response header and response body that you want to
-place in the cache. The following is an example of a ``PUSH`` request:
+``PUSH`` は HTTP 1.1 メッセージフォーマットを使用します。 ``PUSH`` リク
+エストのボディはキャッシュに入れたいレスポンスヘッダーとレスポンスボ
+ディを含みます。下記は ``PUSH`` リクエストの例です。
 
 ::
 
@@ -406,63 +399,64 @@ place in the cache. The following is an example of a ``PUSH`` request:
     a
     </HTML>
 
-**IMPORTANT:** Your header must include ``Content-length`` -
-``Content-length`` must include both ``header`` and ``body byte count``.
+**重要:** ヘッダーは ``Contetnt-length`` を含んでいる必要があります -
+``Contetn-length`` は ``header`` と ``body byte count`` の両方を含む必
+要があります。
 
 Tools that will help manage pushing
 -----------------------------------
 
-There is a perl script for pushing, `tools/push.pl`_,
-which can help you understanding how to write some script for pushing
-content.
+プッシュするための perl スクリプトがあります。`tools/push.pl`_ です。
+これはコンテンツをプッシュするためのスクリプトの書き方を理解することに
+役立ちます。
 
 Pinning Content in the Cache
 ============================
 
-The **Cache Pinning Option** configures Traffic Server to keep certain
-HTTP objects in the cache for a specified time. You can use this option
-to ensure that the most popular objects are in cache when needed and to
-prevent Traffic Server from deleting important objects. Traffic Server
-observes ``Cache-Control`` headers and pins an object in the cache only
-if it is indeed cacheable.
+**Cache Pinning Option** は特定の時間の間 HTTP オブジェクトをキャッシュ
+に確実に入れておくように Traffic Server を設定します。最もポピュラーな
+オブジェクトが必要とされるときにキャッシュされていることと、 Traffic
+Server が重要なオブジェクトを削除することを防ぐことを確実にしたい際に
+このオプションが使えます。Traffic Server は ``Cache-Control`` ヘッダー
+を監視し、本当にキャッシュ可能な場合にオブジェクトをキャッシュに留めます。
 
-To set cache pinning rules
+キャッシュを留めるルールを設定するためには
 
-3. Make sure the following variable in `records.config`_ is set
+1. `records.config`_ の次の変数がセットされていることを確認してくださ
+   い。
 
    -  `proxy.config.cache.permit.pinning`_
 
-4. Add a rule in `cache.config`_ for each
-   URL you want Traffic Server to pin in the cache. For example:
+2. Traffic Server にキャッシュに留めさせたい URL 毎に `cache.config`_
+   にルールを追加してください。例:
 
    ::
 
        :::text
        url_regex=^https?://(www.)?apache.org/dev/ pin-in-cache=12h
 
-5. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+3. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 To Cache or Not to Cache?
 =========================
 
-When Traffic Server receives a request for a web object that is not in
-the cache, it retrieves the object from the origin server and serves it
-to the client. At the same time, Traffic Server checks if the object is
-cacheable before storing it in its cache to serve future requests.
+Traffic Server がキャッシュしていないウェブオブジェクトへのリクエスト
+を受け取った際、オリジンサーバーからオブジェクトを回収し、クライアント
+に配信します。その際に、Traffic Server は将来のリクエストに備えてキャッ
+シュに保存する前に、オブジェクトがキャッシュ可能かどうか確認します。
 
 Caching HTTP Objects
 ====================
 
-Traffic Server responds to caching directives from clients and origin
-servers, as well as directives you specify through configuration options
-and files.
+Traffic Server は設定オプションやファイルに指定したディレクティブと同
+じように、クライアントやオリジンサーバーからのキャッシュのディレクティ
+ブに反応します。
 
 Client Directives
 -----------------
 
-By default, Traffic Server does *not* cache objects with the following
-**request headers**:
+デフォルトでは Traffic Server は次の **request headers** を持つオブジェ
+クトをキャッシュ *しません* 。
 
 -  ``Authorization``: header
 
@@ -470,186 +464,188 @@ By default, Traffic Server does *not* cache objects with the following
 
 -  ``Cache-Control: no-cache`` header
 
-   To configure Traffic Server to ignore the ``Cache-Control: no-cache``
-   header, refer to `Configuring Traffic Server to Ignore Client no-cache Headers`_
+   ``Cache-Control: no-cache`` ヘッダーを無視するように Traffic Server
+   を設定するには `Configuring Traffic Server to Ignore Client
+   no-cache Headers`_ を参照してください。
 
 -  ``Cookie``: header (for text objects)
 
-   By default, Traffic Server caches objects served in response to
-   requests that contain cookies (unless the object is text). You can
-   configure Traffic Server to not cache cookied content of any type,
-   cache all cookied content, or cache cookied content that is of image
-   type only. For more information, refer to `Caching Cookied Objects`_.
+   デフォルトでは、クッキーを含むようなリクエストへの返答として返され
+   るオブジェクト (テキストではないオブジェクト) を Traffic Server は
+   キャッシュします。Traffic Server を次の用に設定することができます。
+   クッキーを持ったどんなタイプのコンテンツでもキャッシュしない、クッ
+   キーを持った全てのコンテンツをキャッシュする、もしくはクッキーを持っ
+   た画像だけをキャッシュする。より詳しくは `Caching Cookied Objects`_
+   を参照してください。
 
 Configuring Traffic Server to Ignore Client no-cache Headers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Traffic Server strictly observes client
-``Cache-Control: no-cache`` directives. If a requested object contains a
-``no-cache`` header, then Traffic Server forwards the request to the
-origin server even if it has a fresh copy in cache. You can configure
-Traffic Server to ignore client ``no-cache`` directives such that it
-ignores ``no-cache`` headers from client requests and serves the object
-from its cache.
+デフォルトでは Traffic Server はクライアントの ``Cache-Control:
+no-cache`` ディレクティブを正確に守ります。リクエストされたオブジェ
+クトが ``no-cache`` を含んでいる場合、Traffic Server はキャッシュのコ
+ピーが新鮮であったとしても、オリジンサーバーにリクエストを転送します。
+Traffic Server がクライアントからの ``no-cache`` ディレクティブを無視
+するように設定することもできます。この場合、クライアントからのリクエス
+トの ``no-cache`` ヘッダーを無視して、キャッシュからオブジェクトを配信
+します。
 
-To configure Traffic Server to ignore client ``no-cache`` headers
+``no-cache`` ヘッダーを無視するように Traffic Server を設定するには
 
-3. Edit the following variable in `records.config`_
+1. `records.config`_ の次の値を変更してください。
 
-   -  `proxy.config.cache.ignore_client_no_cache`
+   -  `proxy.config.cache.ignore_client_no_cache`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Origin Server Directives
 ------------------------
 
-By default, Traffic Server does *not* cache objects with the following
-**response** **headers**:
+デフォルトでは Traffic Server は次の **respons headers** を持つ
+ようなオブジェクトをキャッシュ *しません*。
 
 -  ``Cache-Control: no-store`` header
 -  ``Cache-Control: private`` header
 -  ``WWW-Authenticate``: header
 
-   To configure Traffic Server to ignore ``WWW-Authenticate`` headers,
-   refer to `Configuring Traffic Server to Ignore WWW-Authenticate Headers`_.
+   ``WWW-Authenticate`` ヘッダーを無視するように Traffic Server を設定
+   するには `Configuring Traffic Server to Ignore WWW-Authenticate
+   Headers`_ を参照してください。
 
 -  ``Set-Cookie``: header
 -  ``Cache-Control: no-cache`` headers
 
-   To configure Traffic Server to ignore ``no-cache`` headers, refer to
-   `Configuring Traffic Server to Ignore Server no-cache Headers`_.
+   ``no-cache`` ヘッダーを無視するように Traffic Server を設定するには
+   `Configuring Traffic Server to Ignore Server no-cache Headers`_ を
+   参照してください。
 
 -  ``Expires``: header with value of 0 (zero) or a past date
 
 Configuring Traffic Server to Ignore Server no-cache Headers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Traffic Server strictly observes ``Cache-Control: no-cache``
-directives. A response from an origin server with a ``no-cache`` header
-is not stored in the cache and any previous copy of the object in the
-cache is removed. If you configure Traffic Server to ignore ``no-cache``
-headers, then Traffic Server also ignores ``no-``\ **``store``**
-headers. The default behavior of observing ``no-cache`` directives is
-appropriate in most cases.
+デフォルトでは Traffic Server は ``Cache-Control: no-cache`` ディレク
+ティブを正確に守ります。``no-cache`` ヘッダーが付いているオリジンサー
+バーからのレスポンスはキャッシュに保存されません。また、以前キャッシュ
+されたオブジェクトののコピーは削除されます。 ``no-cache`` ヘッダーを無
+視するように Traffic Server を設定した場合、Traffic Server は ``no-``\
+**``store``** ヘッダーも無視します。``no-cache`` ディレクティブを守る
+デフォルトの振る舞いはほとんどの場合に適切です。
 
-To configure Traffic Server to ignore server ``no-cache`` headers
+``no-cache`` ヘッダーを無視するように Traffic Server を設定するには
 
-3. Edit the following variable in `records.config`_
+1. `records.config`_ の次の値を編集してください。
 
    -  `proxy.config.cache.ignore_server_no_cache`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Configuring Traffic Server to Ignore WWW-Authenticate Headers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Traffic Server does not cache objects that contain
-``WWW-Authenticate`` response headers. The ``WWW-Authenticate`` header
-contains authentication parameters the client uses when preparing the
-authentication challenge response to an origin server.
+デフォルトでは Traffic Server は ``WWW-Authenticate`` レスポンスヘッダー
+を含むオブジェクトをキャッシュしません。 ``WWW-Authenticate`` ヘッダー
+はクライアントがオリジンサーバーへのチャレンジレスポンス認証の際に使う
+認証パラメーターを含んでいます。
 
-When you configure Traffic Server to ignore origin server
-``WWW-Authenticate`` headers, all objects with ``WWW-Authenticate``
-headers are stored in the cache for future requests. However, the
-default behavior of not caching objects with ``WWW-Authenticate``
-headers is appropriate in most cases. Only configure Traffic Server to
-ignore server ``WWW-Authenticate`` headers if you are knowledgeable
-about HTTP 1.1.
+オリジンサーバーの ``WWW-Authenticate`` ヘッダーを無視するように
+Traffic Server を設定した場合、 ``WWW-Authenticate`` ヘッダーを持つ全
+てのオブジェクトは次のリクエストの為にキャッシュに保存されます。
+しかし、 ``WWW-Authenticate`` ヘッダーを持つオブジェクトをキャッシュし
+ないデフォルトの振る舞いは多くの場合に適切です。 ``WWW-Authenticate``
+ヘッダーを無視するように Traffic Server を設定するのは HTTP 1.1 に精通
+してる場合にだけにしてください。
 
-To configure Traffic Server to ignore server ``WWW-Authenticate``
-headers
+``WWW-Authenticate`` ヘッダーを無視するように Traffic Server を設定す
+るには
 
-3. Edit the following variable in `records.config`_
+1. `records.config`_ の次の値を変更してください。
 
    -  `proxy.config.cache.ignore_authentication`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Configuration Directives
 ------------------------
 
-In addition to client and origin server directives, Traffic Server
-responds to directives you specify through configuration options and
-files.
+クライアントやオリジンサーバーのディレクティブに加えて、Traffic Server
+は設定オプションやファイルを通じて設定したディレクティブにも反応します。
 
-You can configure Traffic Server to do the following:
+次のように Traffic Server を設定することができます。
 
--  *Not* cache any HTTP objects (refer to `Disabling HTTP Object Caching`_).
--  Cache **dynamic content** - that is, objects with URLs that end in
-   **``.asp``** or contain a question mark (**``?``**), semicolon
-   (**``;``**), or **``cgi``**. For more information, refer to `Caching Dynamic Content`_.
--  Cache objects served in response to the ``Cookie:`` header (refer to
-   `Caching Cookied Objects`_.
--  Observe ``never-cache`` rules in the `cache.config`_ file.
+-  どんな HTTP オブジェクトもキャッシュ *しない* (`Disabling HTTP
+   Object Caching`_ 参照)
+-  **dynamic content** をキャッシュする
+   **``.asp``** で終わったり、クエスチョンマーク (**``?``**)、セミコロ
+   ン (**``;``**) や **``cgi``** を含んでいたりする URL のオブジェクト
+   より詳しくは  `Caching Dynamic Content`_ を参照してください。
+-  ``Cookie:`` ヘッダーに対して返されるオブジェクトをキャッシュする
+   (`Caching Cookied Objects`_ 参照)
+-  `cache.config`_ ファイルの ``never-cache`` ルールを守る
 
 Disabling HTTP Object Caching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Traffic Server caches all HTTP objects except those for
-which you have set
-```never-cache`` <configuration-files/cache.config#action>`_ rules in
-the ```cache.config`` <../configuration-files/cache.config>`_ file. You
-can disable HTTP object caching so that all HTTP objects are served
-directly from the origin server and never cached, as detailed below.
+デフォルトでは Traffic Server は ```cache.config``
+<../configuration-files/cache.config>`_ ファイルに設定した
+```never-cache`` <configuration-files/cache.config#action>`_ ルールを
+除く全ての HTTP オブジェクトをキャッシュします。後述するように　HTTP
+オブジェクトがオリジンサーバーから直接配信され、決してキャッシュされな
+いように HTTP オブジェクトのキャッシュを無効化することもできます。
 
-To disable HTTP object caching manually
+HTTP オブジェクトを手動で無効化するには
 
-3. Edit the following variable in `records.config`_
+1. `recordes.config`_ の次の変数を変更してください。
 
    -  `proxy.config.cache.http`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Caching Dynamic Content
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A URL is considered **dynamic** if it ends in **``.asp``** or contains a
-question mark (**``?``**), a semicolon (**``;``**), or **``cgi``**. By
-default, Traffic Server caches dynamic content. You can configure the
-system to ignore dyanamic looking content, although this is recommended
-only if the content is *truely* dyanamic, but fails to advertise so with
-appropriate ``Cache-Control`` headers.
+**``.asp``** で終わったり、クエスチョンマーク (**``?``**)、セミコロン
+(**``;``**) や **``cgi``** を含んでいたりする URL  は **動的** である
+と考えられます。デフォルトでは Traffic Server は動的コンテンツをキャッ
+シュします。コンテンツが *本当に* 動的である場合にだけ推奨されますが、
+適切な ``Cache-Control`` ヘッダーによって伝えることができないとき、動
+的だと思われるコンテンツを無視するようにシステムを設定することができます。
 
-To configure Traffic Server's cache behaviour in regard to dynamic
-content
+動的コンテンツに配慮した Traffic Server の振る舞いを設定するには
 
-3. Edit the following variable in `records.config`_
+1. `recordes.config`_ の次の変数を変更してください。
 
-   -  `proxy.config.http.cache.cache_urls_that_look_dynamic`
+   -  `proxy.config.http.cache.cache_urls_that_look_dynamic`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Caching Cookied Objects
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. XXX This should be extended to xml as well!
 
-By default, Traffic Server caches objects served in response to requests
-that contain cookies. This is true for all types of objects except for
-text. Traffic Server does not cache cookied text content because object
-headers are stored along with the object, and personalized cookie header
-values could be saved with the object. With non-text objects, it is
-unlikely that personalized headers are delivered or used.
+デフォルトではクッキーを含むリクエストに対するレスポンスとして配信され
+たオブジェクトを Traffic Server はキャッシュします。これはテキストを除
+いた全てのタイプのオブジェクトについても同じです。Traffic Server はクッ
+キーをもつテキストコンテンツをキャッシュしません。それは オブジェクト
+のヘッダーはオブジェクト共に保存され、個人的なクッキーヘッダーの値もオ
+ブジェクトと共に保存されるためです。テキストではないオブジェクトの場合、
+個人的なヘッダーは配信されたり使われたりしません。
 
-You can reconfigure Traffic Server to:
+次のように Traffic Server を設定し直すことができます。
 
--  *Not* cache cookied content of any type.
--  Cache cookied content that is of image type only.
--  Cache all cookied content regardless of type.
+-  クッキーを含む全てのコンテンツをキャッシュ *しない*
+-  クッキーを含む画像のみキャッシュする
+-  タイプを考慮せずクッキーを含む全てのコンテンツをキャッシュする
 
-To configure how Traffic Server caches cookied content
+クッキーを含むコンテンツをどのようにキャッシュするか Traffic Server を
+設定するには
 
-3. Edit the following variable in `records.config`_
+1. `recordes.config`_ の次の変数を変更してください。
 
    -  `proxy.config.cache_responses_to_cookies`_
 
-4. Run the command ``traffic_line -x`` to apply the configuration
-   changes.
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 
 Forcing Object Caching
 ======================
@@ -666,6 +662,7 @@ To force document caching
    ::
        url_regex=^https?://(www.)?apache.org/dev/ ttl-in-cache=6h
 
+2. 設定の変更を適用するために ``traffic_line -x`` コマンドを実行してください。
 2. Run the command ``traffic_line -x`` to apply the configuration
    changes.
 
