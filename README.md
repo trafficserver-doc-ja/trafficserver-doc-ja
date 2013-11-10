@@ -4,19 +4,13 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 
 ## オリジナルサイト／リポジトリ
 
-- ドキュメント : https://trafficserver.readthedocs.org/en/latest/index.html
+- ドキュメント : https://trafficserver.readthedocs.org/en/latest/
 - リポジトリ : https://github.com/apache/trafficserver/tree/master/doc
 
-# 翻訳
-## Work in progress
+## 日本語翻訳版
 
-- [Index](./doc_ja/index.ja.rst)
-- [Administrator's Guide](./doc_ja/admin/index.ja.rst) Installing, configuring and administrating Traffic Server
-
-## Not yet
-
-- [SDK Programmer's Guide] Developing Traffic Server plug-ins and how the code works
-- [Frequently Asked Questions] A running list of your most common questions
+- ドキュメント : https://trafficserver-ja.readthedocs.org/ja/latest/
+- リポジトリ : https://github.com/trafficserver-doc-ja/trafficserver/tree/doc-ja/doc
 
 # Contribution
 
@@ -24,7 +18,7 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 いずれの方法でも歓迎しますので、気軽にご参加ください。
 
 1. GitHub 上で翻訳/校正を行う方法
-3. Transifex 上で翻訳/校正を行う方法
+2. Transifex 上で翻訳/校正を行う方法(現在はトライアル状態です)
 
 ## GitHub
 
@@ -32,17 +26,24 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 
 ### 新規に翻訳を始める場合
 
-1. このリポジトリを Fork してください。
-2. Issue にどのドキュメントを翻訳するか登録してください。
+1. [trafficserver-doc-ja/trafficserver](https://github.com/trafficserver-doc-ja/trafficserver) を Fork してください。
+2. どのドキュメントを翻訳するか決めてください。
+   [doc/locale/ja/LC_MESSAGES/](https://github.com/trafficserver-doc-ja/trafficserver/tree/doc-ja/doc/locale/ja/LC_MESSAGES) 下に
+   PO ファイルが用意してあります。
+3. タイトルに "[WIP]" プレフィックスをつけて `doc-ja`  ブランチに  Pull-Request を投げてください。
    これは同じドキュメントに対して複数の方が同時に翻訳作業を行うことを防ぐためです。
-3. 翻訳してください。
-   ディレクトリ構成は apache/trafficserver に従ってください。
-   ファイル名を `***_ja.rst` としてください。
-4. `master` ブランチへ Pull-Request を送ってください。
+   例えば `admin/http-proxy-caching` を翻訳するのであれば、` [WIP] Translate admin/http-proxy-caching` のようなタイトルになります。
+4. `doc/locale/ja/LC_MESSAGES/` ディレクトリしたの `*.po`ファイルを翻訳してください。 
+5. 翻訳が完了したら "[WIP]" プレフィックスを取って、マージしても問題ないことを示してください。
+
+### 翻訳を修正する場合
+
+新規に翻訳を始める際と同様に Pull-Request を投げてください。
 
 ### レビューする場合
 
 登録されている Pull-Request を読んでいただいて、コメントをお願いします。
+"[WIP]" プレフィックスが付いているものでも、翻訳者に早くフィードバックするためにコメントをお願いします。
 
 ## Transifex
 
@@ -58,7 +59,17 @@ OSS 利用であれば無料で登録することができます。
 - [Apache Traffic Server @Transifex](https://www.transifex.com/projects/p/traffic-server-admin/)
 - [Apache Traffic Server @Transifex Japanese Team](https://www.transifex.com/projects/p/traffic-server-admin/language/ja_JP/)
 
-## License
+# 用語
+
+翻訳・レビューの際に用語が問題になることが多いです。いくつかの用語は Transifex 上の用語集にまとめています。
+参考にしてください。
+
+- [Apache Traffic Server / 用語集 / Japanese (Japan) ja_JP](https://www.transifex.com/projects/p/traffic-server-admin/glossary/l/ja_JP/)
+
+追加・変更・コメントなどをいただけると幸いです。
+Transifex 上でも、GitHub 上で Issue を登録していただいても結構です。
+
+# License
 
 trafficserver-doc-ja プロジェクトの成果物は著作権およびライセンスによる制限のない限り、
 翻訳著作権はこれを trafficserver-doc-ja に帰属することとし、Apache Traffic Server と同じ
