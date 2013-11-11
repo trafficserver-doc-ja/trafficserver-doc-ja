@@ -2,6 +2,8 @@
 
 Apache Traffic Server のドキュメントを日本語に翻訳するプロジェクトです。
 
+※作業リポジトリは [trafficserver-doc-ja/trafficserve](https://github.com/trafficserver-doc-ja/trafficserver/tree/doc-ja/doc) です。
+
 ## オリジナルサイト／リポジトリ
 
 - ドキュメント : https://trafficserver.readthedocs.org/en/latest/
@@ -32,6 +34,7 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
    PO ファイルが用意してあります。
 3. タイトルに "[WIP]" プレフィックスをつけて `doc-ja`  ブランチに  Pull-Request を投げてください。
    これは同じドキュメントに対して複数の方が同時に翻訳作業を行うことを防ぐためです。
+   
    例えば `admin/http-proxy-caching` を翻訳するのであれば、` [WIP] Translate admin/http-proxy-caching` のようなタイトルになります。
 4. `doc/locale/ja/LC_MESSAGES/` ディレクトリしたの `*.po`ファイルを翻訳してください。 
 5. 翻訳が完了したら "[WIP]" プレフィックスを取って、マージしても問題ないことを示してください。
