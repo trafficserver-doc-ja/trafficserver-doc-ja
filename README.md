@@ -32,6 +32,8 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 2. どのドキュメントを翻訳するか決めてください。
    [doc/locale/ja/LC_MESSAGES/](https://github.com/trafficserver-doc-ja/trafficserver/tree/doc-ja/doc/locale/ja/LC_MESSAGES) 下に
    PO ファイルが用意してあります。
+   PO ファイルについては下記等を参照してください。
+   - http://www.postgresql.jp/document/9.2/html/nls-translator.html
 3. タイトルに "[WIP]" プレフィックスをつけて `doc-ja`  ブランチに  Pull-Request を投げてください。
    これは同じドキュメントに対して複数の方が同時に翻訳作業を行うことを防ぐためです。
    
