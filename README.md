@@ -55,6 +55,12 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 翻訳中に原文の typo を発見した場合は、typo のみを修正して `typos` ブランチに Pull-Request を投げてください。
 これは翻訳の完了を待たずに修正を速やかに本家に報告することを可能にし、本家でマージを行う際に確認作業を行いやすくするためです。
 
+### 手元でビルドする方法
+
+Pull-Request を送る前に、手元の環境でビルドしたい場合は次の手順に従ってください。
+
+- [HowToBuild](https://github.com/trafficserver-doc-ja/trafficserver-doc-ja/blob/master/HowToBuild.rst)
+
 ## Transifex
 
 Apache Traffic Server のドキュメントの各言語への翻訳プロジェクトが [Transifex](https://www.transifex.com/) というウェブサービス上にあります。
