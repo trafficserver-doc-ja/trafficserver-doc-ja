@@ -14,6 +14,7 @@
 ---------------------------------------
 
 ::
+
   $ sphinx-intl build -p locale/ -l ja
 
 
@@ -21,6 +22,7 @@
 --------------------------------------
 
 ::
+
   $ sphinx-build -b html -D language=ja . ./build
 
 参考
