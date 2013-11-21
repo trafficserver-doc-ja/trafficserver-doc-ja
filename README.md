@@ -6,12 +6,12 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 
 ## オリジナルサイト／リポジトリ
 
-- ドキュメント : https://trafficserver.readthedocs.org/en/latest/
+- ドキュメント : http://docs.trafficserver.apache.org/en/latest/
 - リポジトリ : https://github.com/apache/trafficserver/tree/master/doc
 
 ## 日本語翻訳版
 
-- ドキュメント : https://trafficserver.readthedocs.org/ja/latest/
+- ドキュメント : http://docs.trafficserver.apache.org/ja/latest/
 - リポジトリ : https://github.com/trafficserver-doc-ja/trafficserver/tree/doc-ja/doc
 
 # Contribution
