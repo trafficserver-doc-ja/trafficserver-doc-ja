@@ -87,9 +87,8 @@ Transifex 上でも、GitHub 上で Issue を登録していただいても結�
 
 # Get Involved
 
-基本的に GitHub 上の
-[irc.freenode.net](http://freenode.net) 上の #traffic-server-ja を trafficserver-doc-ja/owners はで翻訳に関する話題が話されています。
-ATS 本体の話題は #traffic-server です。
+基本的に GitHub 上の Issue や Pull-Request で議論が行われています。
+[irc.freenode.net](http://freenode.net) 上の #traffic-server-ja にて日本語翻訳に関する話題が話されています。
 
 # License
 
