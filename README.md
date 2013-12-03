@@ -85,6 +85,12 @@ OSS 利用であれば無料で登録することができます。
 追加・変更・コメントなどをいただけると幸いです。
 Transifex 上でも、GitHub 上で Issue を登録していただいても結構です。
 
+# Get Involved
+
+基本的に GitHub 上の
+[irc.freenode.net](http://freenode.net) 上の #traffic-server-ja を trafficserver-doc-ja/owners はで翻訳に関する話題が話されています。
+ATS 本体の話題は #traffic-server です。
+
 # License
 
 trafficserver-doc-ja プロジェクトの成果物は著作権およびライセンスによる制限のない限り、
