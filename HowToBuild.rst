@@ -25,7 +25,13 @@
 
   $ sphinx-build -b html -D language=ja . ./build
 
+ローカル環境で RTD テーマの使用
+==============================
+
+* https://github.com/snide/sphinx_rtd_theme
+
 参考
 ====
 
-http://docs.sphinx-users.jp/intl.html
+* http://docs.sphinx-users.jp/intl.html
+* http://read-the-docs.readthedocs.org/en/latest/faq.html#i-want-to-use-the-read-the-docs-theme-locally
