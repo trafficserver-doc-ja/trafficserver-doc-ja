@@ -64,12 +64,13 @@ Pull-Request を送る前に、手元の環境でビルドしたい場合は次�
 ## Transifex
 
 Apache Traffic Server のドキュメントの各言語への翻訳プロジェクトが [Transifex](https://www.transifex.com/) というウェブサービス上にあります。
-校正作業は Transifex 上で行った方が楽なので、将来的に校正作業はこちらに移していきたいと考えています。
+校正作業は Transifex 上で行った方が楽なので、将来的に校正作業はこちらに移していきたいと考えていますが、検討中です ( [#26](https://github.com/trafficserver-doc-ja/trafficserver-doc-ja/issues/26) )
+現状は GitHub 上での Pull-Request ベースでの翻訳作業となります。
 
-Transifex へサインアップして、 Apache Traffic Server の日本語翻訳チームに参加してください。
-OSS 利用であれば無料で登録することができます。
-チームに参加後、Transifex 上で翻訳されるか、既に翻訳してあるものに対してコメントをください。
-特に承認等のプロセスはございませんので、気軽にご参加ください。
+~~Transifex へサインアップして、 Apache Traffic Server の日本語翻訳チームに参加してください。~~
+~~OSS 利用であれば無料で登録することができます。~~
+~~チームに参加後、Transifex 上で翻訳されるか、既に翻訳してあるものに対してコメントをください。~~
+~~特に承認等のプロセスはございませんので、気軽にご参加ください。~~
 
 - [Transifex](https://www.transifex.com/)
 - [Apache Traffic Server @Transifex](https://www.transifex.com/projects/p/traffic-server-admin/)
