@@ -26,6 +26,11 @@ Apache Traffic Server のドキュメントを日本語に翻訳するプロジ�
 
 日本語訳の追加／修正等の Pull-Request を送ってください。
 
+### 誤訳等を指摘する場合
+[trafficserver-doc-ja/trafficserver](https://github.com/trafficserver-doc-ja/trafficserver/issues) に Issue をあげてください。
+
+プロジェクト全体に関わる問題の場合は [trafficserver-doc-ja/trafficserver-doc-ja](https://github.com/trafficserver-doc-ja/trafficserver-doc-ja/issues) に Issue をあげてください。
+
 ### 新規に翻訳を始める場合
 
 1. [trafficserver-doc-ja/trafficserver](https://github.com/trafficserver-doc-ja/trafficserver) を Fork してください。
@@ -75,6 +80,22 @@ Apache Traffic Server のドキュメントの各言語への翻訳プロジェ�
 - [Transifex](https://www.transifex.com/)
 - [Apache Traffic Server @Transifex](https://www.transifex.com/projects/p/traffic-server-admin/)
 - [Apache Traffic Server @Transifex Japanese Team](https://www.transifex.com/projects/p/traffic-server-admin/language/ja_JP/)
+
+# スタイルに関するルール
+下記のルールがあります。変更したい場合は Issue を発行してください。
+
+1. 1行は 78 文字以内にしてください。
+  
+  これは GitHub 上でレビューをしやすくするためです。
+  
+  msgcat での整形が便利です。
+  ```
+  find . -name "*.po" -exec msgcat -w 78 -o {} {} \;
+  ```
+
+2. スペース
+  
+  英数字の前後にスペースを入れてください。これは HTML に変換した際の見栄えのためです。(#12)
 
 # 用語
 
